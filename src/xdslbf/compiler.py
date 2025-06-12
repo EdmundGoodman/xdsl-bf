@@ -1,5 +1,7 @@
 """Compiler for the BrainF language."""
 
+from pathlib import Path
+
 from xdsl.context import Context
 from xdsl.dialects import (
     arith,
@@ -8,6 +10,7 @@ from xdsl.dialects import (
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
+from xdslbf.frontend.parser import BrainFParser
 
 
 def get_context() -> Context:
@@ -23,14 +26,10 @@ def get_context() -> Context:
 
 def parse_brainf(program: str, _ctx: Context | None = None) -> ModuleOp:
     """Parse a BrainF program."""
-    print(program)
-    # mlir_gen = IRGen()
-    # module_ast = ToyParser(Path("in_memory"), program).parseModule()
-    # module_op = mlir_gen.ir_gen_module(module_ast)
-    # return module_op
-    raise NotImplementedError
+    return BrainFParser(Path("in_memory"), program).parse()
 
 
 if __name__ == "__main__":
-    code = "++++"
-    parse_brainf(code)
+    code = "[++-]"
+    module = parse_brainf(code)
+    print(module)
