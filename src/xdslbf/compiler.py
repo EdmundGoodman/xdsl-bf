@@ -30,6 +30,6 @@ def parse_brainf(program: str, _ctx: Context | None = None) -> ModuleOp:
 
 
 if __name__ == "__main__":
-    code = "[++-]"
+    code = ",[>++<-]."
     module = parse_brainf(code)
     print(module)

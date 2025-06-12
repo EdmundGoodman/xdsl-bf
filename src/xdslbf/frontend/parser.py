@@ -11,8 +11,10 @@ from xdslbf.dialects.bf import (
     BrainFOperation,
     DecOp,
     IncOp,
+    InOp,
     LoopOp,
     LshftOp,
+    OutOp,
     RetOp,
     RshftOp,
 )
@@ -25,6 +27,8 @@ OPERATION_LOOKUP: dict[BrainFTokenKind, type[BrainFOperation]] = {
     BrainFTokenKind.GT: RshftOp,
     BrainFTokenKind.SBRACKET_OPEN: LoopOp,
     BrainFTokenKind.SBRACKET_CLOSE: RetOp,
+    BrainFTokenKind.DOT: OutOp,
+    BrainFTokenKind.COMMA: InOp,
 }
 
 

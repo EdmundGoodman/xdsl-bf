@@ -95,6 +95,26 @@ class RetOp(BrainFOperation):
     name = "ret"
 
 
+@irdl_op_definition
+class OutOp(BrainFOperation):
+    """Output operation `<`.
+
+    Output the byte at the data pointer.
+    """
+
+    name = "out"
+
+
+@irdl_op_definition
+class InOp(BrainFOperation):
+    """Input operation `>`.
+
+    Accept one byte of input, storing its value in the byte at the data pointer.
+    """
+
+    name = "in"
+
+
 BrainF = Dialect(
     "bf",
     [
@@ -104,6 +124,8 @@ BrainF = Dialect(
         RshftOp,
         LoopOp,
         RetOp,
+        OutOp,
+        InOp,
     ],
     [],
 )
