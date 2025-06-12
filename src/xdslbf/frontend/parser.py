@@ -42,14 +42,27 @@ class BrainFParser(GenericParser[BrainFTokenKind]):
     def parse(self) -> ModuleOp:
         """Parser a BrainF program."""
         ops: list[BrainFOperation] = []
+        bracket_count = 0
 
         while True:
             token = self._consume_token()
             if token.kind == BrainFTokenKind.EOF:
                 break
+
+            if token.kind == BrainFTokenKind.SBRACKET_OPEN:
+                bracket_count += 1
+            if token.kind == BrainFTokenKind.SBRACKET_CLOSE:
+                bracket_count -= 1
+                if bracket_count < 0:
+                    raise ParseError(token.span, "Mis-matched ']'!")
+
             if token.kind in OPERATION_LOOKUP:
                 ops.append(OPERATION_LOOKUP[token.kind]())
             else:
                 raise ParseError(token.span, "Unsupported token!")
+
+        if bracket_count != 0:
+            assert bracket_count > 0
+            raise ParseError(token.span, "Mis-matched '['!")
 
         return ModuleOp(ops)  # pyright: ignore[reportArgumentType]

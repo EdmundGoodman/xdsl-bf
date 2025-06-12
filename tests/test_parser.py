@@ -32,3 +32,19 @@ def test_undefined_instructions_parse() -> None:
     with pytest.raises(ParseError) as exc:
         parse_brainf(code)
     assert exc.value.msg == "Unexpected character: a"
+
+
+def test_mismatched_loop_start_parse() -> None:
+    """Test the parser rejects mis-matched loop starts."""
+    code = "++[["
+    with pytest.raises(ParseError) as exc:
+        parse_brainf(code)
+    assert exc.value.msg == "Mis-matched '['!"
+
+
+def test_mismatched_loop_end_parse() -> None:
+    """Test the parser rejects mis-matched loop ends."""
+    code = "++[]]]"
+    with pytest.raises(ParseError) as exc:
+        parse_brainf(code)
+    assert exc.value.msg == "Mis-matched ']'!"
