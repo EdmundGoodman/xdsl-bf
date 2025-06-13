@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from xdsl.dialects.builtin import ModuleOp
+from xdsl.ir import Block, Region
 from xdsl.parser import GenericParser, ParserState
 from xdsl.utils.exceptions import ParseError
 from xdsl.utils.lexer import Input
@@ -40,9 +41,9 @@ class BrainFParser(GenericParser[BrainFTokenKind]):
         super().__init__(ParserState(BrainFLexer(Input(program, str(file)))))
 
     def parse(self) -> ModuleOp:
-        """Parser a BrainF program."""
-        ops: list[BrainFOperation] = []
-        bracket_count = 0
+        """Parse a BrainF program."""
+        module_op = ModuleOp([])
+        scope: list[Block] = [module_op.body.block]
 
         while True:
             token = self._consume_token()
@@ -50,19 +51,18 @@ class BrainFParser(GenericParser[BrainFTokenKind]):
                 break
 
             if token.kind == BrainFTokenKind.SBRACKET_OPEN:
-                bracket_count += 1
-            if token.kind == BrainFTokenKind.SBRACKET_CLOSE:
-                bracket_count -= 1
-                if bracket_count < 0:
+                scope[-1].add_op(LoopOp(regions=[Region([block := Block([])])]))
+                scope.append(block)
+            elif token.kind == BrainFTokenKind.SBRACKET_CLOSE:
+                if len(scope) < 1:
                     raise ParseError(token.span, "Mis-matched ']'!")
-
-            if token.kind in OPERATION_LOOKUP:
-                ops.append(OPERATION_LOOKUP[token.kind]())
+                scope.pop().add_op(RetOp())
+            elif token.kind in OPERATION_LOOKUP:
+                scope[-1].add_op(OPERATION_LOOKUP[token.kind]())
             else:
                 raise ParseError(token.span, "Unsupported token!")
 
-        if bracket_count != 0:
-            assert bracket_count > 0
+        if len(scope) > 1:
             raise ParseError(token.span, "Mis-matched '['!")
 
-        return ModuleOp(ops)  # pyright: ignore[reportArgumentType]
+        return module_op

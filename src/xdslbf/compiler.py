@@ -38,6 +38,6 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
 
 
 if __name__ == "__main__":
-    code = ",[>++<-]."
-    module = lower_brainf(code, ctx=get_context())
+    code = ",[>++<-[>>++<-<]]."
+    module = parse_brainf(code)
     print(module)

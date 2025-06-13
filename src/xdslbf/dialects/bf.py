@@ -24,6 +24,7 @@ from xdsl.ir import Dialect
 from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
+    region_def,
 )
 
 
@@ -38,7 +39,7 @@ class IncOp(BrainFOperation):
     Increment the byte at the data pointer by one.
     """
 
-    name = "inc"
+    name = "bf.inc"
 
 
 @irdl_op_definition
@@ -48,7 +49,7 @@ class DecOp(BrainFOperation):
     Decrement the byte at the data pointer by one.
     """
 
-    name = "dec"
+    name = "bf.dec"
 
 
 @irdl_op_definition
@@ -58,7 +59,7 @@ class LshftOp(BrainFOperation):
     Increment the data pointer by one (to point to the next cell to the right).
     """
 
-    name = "lshft"
+    name = "bf.lshft"
 
 
 @irdl_op_definition
@@ -68,7 +69,7 @@ class RshftOp(BrainFOperation):
     Decrement the data pointer by one (to point to the next cell to the left).
     """
 
-    name = "rshft"
+    name = "bf.rshft"
 
 
 @irdl_op_definition
@@ -80,7 +81,9 @@ class LoopOp(BrainFOperation):
     command after the matching ] command.
     """
 
-    name = "loop"
+    name = "bf.loop"
+
+    body = region_def()
 
 
 @irdl_op_definition
@@ -92,7 +95,7 @@ class RetOp(BrainFOperation):
     after the matching [ command.
     """
 
-    name = "ret"
+    name = "bf.ret"
 
 
 @irdl_op_definition
@@ -102,7 +105,7 @@ class OutOp(BrainFOperation):
     Output the byte at the data pointer.
     """
 
-    name = "out"
+    name = "bf.out"
 
 
 @irdl_op_definition
@@ -112,7 +115,7 @@ class InOp(BrainFOperation):
     Accept one byte of input, storing its value in the byte at the data pointer.
     """
 
-    name = "in"
+    name = "bf.in"
 
 
 BrainF = Dialect(
