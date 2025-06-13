@@ -28,9 +28,11 @@ class BrainFFunctions(InterpreterFunctions):
 ```
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from xdsl.dialects.builtin import ModuleOp
+from xdsl.ir import Operation
 
 from xdslbf.dialects import bf
 
@@ -42,46 +44,107 @@ class BrainFInterpreter:
     pointer: int = 0
     memory: dict[int, int] = field(default_factory=lambda: {0: 0})
 
-    def interpret(self, program: ModuleOp, debug: bool = True) -> None:  # noqa: C901, PLR0912
+    def _inc(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.inc` instruction."""
+        if self.pointer not in self.memory:
+            self.memory[self.pointer] = 1
+        else:
+            self.memory[self.pointer] += 1
+        return current_instr.next_op
+
+    def _dec(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.dec` instruction."""
+        if self.pointer not in self.memory:
+            self.memory[self.pointer] = -1
+        else:
+            self.memory[self.pointer] -= 1
+        return current_instr.next_op
+
+    def _lshft(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.lshft` instruction."""
+        self.pointer -= 1
+        return current_instr.next_op
+
+    def _rshft(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.rshft` instruction."""
+        self.pointer += 1
+        return current_instr.next_op
+
+    def _out(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.out` instruction.
+
+        Alternative ASCII-based implementation:
+
+        ```python
+        print(chr(self.memory.get(self.pointer, 0)))
+        ```
+        """
+        print(self.memory.get(self.pointer, 0))
+        return current_instr.next_op
+
+    def _in(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.in` instruction.
+
+        Alternative ASCII-based implementation:
+
+        ```python
+        self.memory[self.pointer] = ord(input("> ")[0])
+        ```
+        """
+        self.memory[self.pointer] = int(input("> "))
+        return current_instr.next_op
+
+    def _loop(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.loop` instruction."""
+        if self.memory[self.pointer]:
+            # If non-zero, go to the first loop instruction in the region
+            loop_regions = current_instr.regions
+            assert len(loop_regions) > 0
+            loop_block = loop_regions[0].first_block
+            assert loop_block is not None
+            return loop_block.first_op
+
+        # If zero, jump to the next instruction after the loop region
+        return current_instr.next_op
+
+    def _ret(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.ret` instruction."""
+        if self.memory[self.pointer]:
+            # If non-zero, go to the first loop instruction in the region
+            assert current_instr.parent is not None
+            return current_instr.parent.first_op
+
+        # If zero, jump to the next instruction after the loop region
+        assert current_instr.parent is not None
+        assert current_instr.parent.parent is not None
+        assert current_instr.parent.parent.parent is not None
+        return current_instr.parent.parent.parent.next_op
+
+    def get_operation_implementations(
+        self,
+    ) -> dict[type[Operation], Callable[[Operation], Operation | None]]:
+        """Get the operation implementations."""
+        return {
+            bf.IncOp: self._inc,
+            bf.DecOp: self._dec,
+            bf.LshftOp: self._lshft,
+            bf.RshftOp: self._rshft,
+            bf.OutOp: self._out,
+            bf.InOp: self._in,
+            bf.LoopOp: self._loop,
+            bf.RetOp: self._ret,
+        }
+
+    def interpret(self, program: ModuleOp) -> None:
         """Interpret a BrainF program."""
+        operation_implementations = self.get_operation_implementations()
+
         if (block := program.body.first_block) is None:
             return
-        current_instr = block.first_op
+        current_instr: Operation | None = block.first_op
 
         while current_instr:
-            if debug:
-                print(
-                    f"{current_instr.name} @ {self.pointer} : {self.memory.get(self.pointer, 0)}",
-                    end="",
-                )
-
-            match type(current_instr):
-                case bf.IncOp:
-                    if self.pointer not in self.memory:
-                        self.memory[self.pointer] = 1
-                    else:
-                        self.memory[self.pointer] += 1
-                    current_instr = current_instr.next_op
-                case bf.DecOp:
-                    if self.pointer not in self.memory:
-                        self.memory[self.pointer] = -1
-                    else:
-                        self.memory[self.pointer] -= 1
-                    current_instr = current_instr.next_op
-                case bf.LshftOp:
-                    self.pointer -= 1
-                    current_instr = current_instr.next_op
-                case bf.RshftOp:
-                    self.pointer += 1
-                    current_instr = current_instr.next_op
-                case bf.OutOp:
-                    print(chr(self.memory.get(self.pointer, 0)))
-                    current_instr = current_instr.next_op
-                case bf.InOp:
-                    self.memory[self.pointer] = ord(input("> ")[0])
-                    current_instr = current_instr.next_op
-                case _:
-                    raise RuntimeError(f"Unsupported instruction {current_instr}")
-
-            if debug:
-                print(f" -> {self.memory.get(self.pointer, 0)}")
+            impl = operation_implementations.get(type(current_instr), None)
+            if impl is None:
+                raise RuntimeError(f"Unsupported instruction {current_instr}")
+            current_instr = impl(current_instr)
