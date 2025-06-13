@@ -44,6 +44,9 @@ class BrainFInterpreter:
     pointer: int = 0
     memory: dict[int, int] = field(default_factory=lambda: {0: 0})
 
+    output: list[int] | None = None
+    input_: list[int] | None = None
+
     def _inc(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.inc` instruction."""
         if self.pointer not in self.memory:
@@ -82,6 +85,12 @@ class BrainFInterpreter:
         print(self.memory.get(self.pointer, 0))
         return current_instr.next_op
 
+    def _out_list(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.out` instruction to a list."""
+        assert self.output is not None
+        self.output.append(self.memory.get(self.pointer, 0))
+        return current_instr.next_op
+
     def _in(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.in` instruction.
 
@@ -92,6 +101,12 @@ class BrainFInterpreter:
         ```
         """
         self.memory[self.pointer] = int(input("> "))
+        return current_instr.next_op
+
+    def _in_list(self, current_instr: Operation) -> Operation | None:
+        """Interpret the `bf.in` instruction from a list."""
+        assert self.input_ is not None
+        self.memory[self.pointer] = self.input_.pop(0)
         return current_instr.next_op
 
     def _loop(self, current_instr: Operation) -> Operation | None:
@@ -129,8 +144,8 @@ class BrainFInterpreter:
             bf.DecOp: self._dec,
             bf.LshftOp: self._lshft,
             bf.RshftOp: self._rshft,
-            bf.OutOp: self._out,
-            bf.InOp: self._in,
+            bf.OutOp: self._out if self.output is None else self._out_list,
+            bf.InOp: self._in if self.input_ is None else self._in_list,
             bf.LoopOp: self._loop,
             bf.RetOp: self._ret,
         }

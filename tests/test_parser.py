@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Unit tests for the parser."""
 
+from typing import Any
+
 import pytest
 from xdsl.utils.exceptions import ParseError
 
 from xdslbf.compiler import parse_brainf
+from xdslbf.emulator.interpreter import BrainFInterpreter
 
 
 def test_simple_parse() -> None:
@@ -96,3 +99,20 @@ def test_mismatched_loop_end_parse() -> None:
     with pytest.raises(ParseError) as exc:
         parse_brainf(code)
     assert exc.value.msg == "Mis-matched ']'!"
+
+
+def test_emulator_simple_loop() -> None:
+    """Test the emulator runs a simple loop."""
+    code = ",[>++<-]>."
+    interpreter = BrainFInterpreter(input_=[5], output=[])
+    interpreter.interpret(parse_brainf(code))
+    assert interpreter.output == [10]
+
+
+def test_emulator_simple_loop_stdio(capsys: Any, monkeypatch: Any) -> None:
+    """Test the emulator runs a simple loop via stdio."""
+    monkeypatch.setattr("builtins.input", lambda _: "5")  # pyright: ignore[reportUnknownLambdaType]
+    code = ",[>++<-]>."
+    BrainFInterpreter().interpret(parse_brainf(code))
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "10"
