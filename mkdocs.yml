@@ -1,24 +1,20 @@
 # https://www.mkdocs.org/user-guide/configuration/
 
 # Project information
-site_name: pyproject.template
+site_name: xdsl-bf
 site_author: Edmund Goodman
 copyright: Copyright &copy Edmund Goodman
 
 # Repository
-repo_name: EdmundGoodman/pyproject.template
-repo_url: https://github.com/EdmundGoodman/pyproject.template
+repo_name: EdmundGoodman/xdsl-bf
+repo_url: https://github.com/EdmundGoodman/xdsl-bf
 
 # Configuration
 use_directory_urls: false
 
 nav:
   - Home: index.md
-  - Getting started: getting_started.md
-  - Implementation: implementation.md
-  - Reference:
-      - Tool: reference/main.md
-  - Contributing: contributing.md
+  - Reference: reference.md
 
 theme:
   name: material

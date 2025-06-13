@@ -5,9 +5,4 @@ hide:
 
 # Introduction
 
-`pyproject.template` is template for making new python projects with all the bells and whistles, including:
-
-- [x] Dependency management with `poetry`
-- [x] Static analysis tools, including: `ruff`, `mypy`, `vulture`, and more!
-- [x] Testing with `pytest` and `coverage.py`
-- [x] Documentation with `mkdocs`
+An optimising BrainF compiler in xDSL.
