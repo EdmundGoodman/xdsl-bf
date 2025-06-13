@@ -22,20 +22,23 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class LshftOpLowering(RewritePattern):
+class ShiftOpLowering(RewritePattern):
     """A pattern to rewrite left shift operations."""
 
     const_1: arith.ConstantOp
     data_pointer: memref.AllocaOp
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, op: bf.LshftOp, rewriter: PatternRewriter) -> None:
+    def match_and_rewrite(
+        self, op: bf.LshftOp | bf.RshftOp, rewriter: PatternRewriter
+    ) -> None:
         """Rewrite left shift operations."""
+        arith_op = arith.AddiOp if isinstance(op, bf.RshftOp) else arith.SubiOp
         rewriter.replace_op(
             op,
             [
                 load_op := memref.LoadOp.get(self.data_pointer, []),
-                inc_op := arith.AddiOp(load_op, self.const_1),
+                inc_op := arith_op(load_op, self.const_1),
                 memref.StoreOp.get(inc_op, self.data_pointer, []),
             ],
         )
@@ -50,14 +53,17 @@ class IncOpLowering(RewritePattern):
     memory: memref.AllocOp
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, op: bf.IncOp, rewriter: PatternRewriter) -> None:
+    def match_and_rewrite(
+        self, op: bf.IncOp | bf.DecOp, rewriter: PatternRewriter
+    ) -> None:
         """Rewrite increment operations."""
+        arith_op = arith.AddiOp if isinstance(op, bf.IncOp) else arith.SubiOp
         rewriter.replace_op(
             op,
             [
                 load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
                 load_data_op := memref.LoadOp.get(self.memory, [load_pointer_op]),
-                inc_op := arith.AddiOp(load_data_op, self.const_1),
+                inc_op := arith_op(load_data_op, self.const_1),
                 memref.StoreOp.get(inc_op, self.memory, [load_pointer_op]),
             ],
         )
@@ -99,7 +105,7 @@ class LowerBfToBuiltinPass(ModulePass):
         PatternRewriteWalker(
             GreedyRewritePatternApplier(
                 [
-                    LshftOpLowering(const_1, data_pointer),
+                    ShiftOpLowering(const_1, data_pointer),
                     IncOpLowering(const_1, data_pointer, memory),
                 ]
             )
