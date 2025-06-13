@@ -25,7 +25,9 @@ from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
     region_def,
+    traits_def,
 )
+from xdsl.traits import MemoryReadEffect, MemoryWriteEffect
 
 
 class BrainFOperation(IRDLOperation, abc.ABC):
@@ -41,6 +43,8 @@ class IncOp(BrainFOperation):
 
     name = "bf.inc"
 
+    traits = traits_def(MemoryWriteEffect())
+
 
 @irdl_op_definition
 class DecOp(BrainFOperation):
@@ -50,6 +54,7 @@ class DecOp(BrainFOperation):
     """
 
     name = "bf.dec"
+    traits = traits_def(MemoryWriteEffect())
 
 
 @irdl_op_definition
@@ -60,6 +65,7 @@ class LshftOp(BrainFOperation):
     """
 
     name = "bf.lshft"
+    traits = traits_def(MemoryWriteEffect())
 
 
 @irdl_op_definition
@@ -70,6 +76,7 @@ class RshftOp(BrainFOperation):
     """
 
     name = "bf.rshft"
+    traits = traits_def(MemoryWriteEffect())
 
 
 @irdl_op_definition
@@ -84,6 +91,7 @@ class LoopOp(BrainFOperation):
     name = "bf.loop"
 
     body = region_def()
+    traits = traits_def(MemoryReadEffect())
 
 
 @irdl_op_definition
@@ -96,6 +104,7 @@ class RetOp(BrainFOperation):
     """
 
     name = "bf.ret"
+    traits = traits_def(MemoryReadEffect())
 
 
 @irdl_op_definition
@@ -106,6 +115,7 @@ class OutOp(BrainFOperation):
     """
 
     name = "bf.out"
+    traits = traits_def(MemoryReadEffect())
 
 
 @irdl_op_definition
@@ -116,6 +126,7 @@ class InOp(BrainFOperation):
     """
 
     name = "bf.in"
+    traits = traits_def(MemoryWriteEffect())
 
 
 BrainF = Dialect(
