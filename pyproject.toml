@@ -19,8 +19,8 @@ authors = [{ name = "Edmund Goodman", email = "egoodman3141@gmail.com" }]
 repository = "https://github.com/EdmundGoodman/xdsl-bf"
 url = "https://edmundgoodman.co.uk/"
 
-[project.scripts]
-pyproject-template = "xdslbf.main:main"
+# [project.scripts]
+# pyproject-template = "xdslbf.main:main"
 
 [build-system]
 requires = ["hatchling"]

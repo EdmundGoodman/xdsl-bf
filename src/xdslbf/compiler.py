@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Compiler for the BrainF language."""
 
 from pathlib import Path
@@ -10,9 +11,10 @@ from xdsl.dialects import (
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
-from xdslbf.emulator.interpreter import BrainFInterpreter
 from xdslbf.frontend.parser import BrainFParser
 from xdslbf.rewrites.lower_brainf import LowerBfToBuiltinPass
+
+# from xdslbf.emulator.interpreter import BrainFInterpreter
 
 
 def get_context() -> Context:
@@ -39,7 +41,7 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
 
 if __name__ == "__main__":
     code = ",[>++<-]>."  # ",[>++<-[>>++<-<]]."
-    module = parse_brainf(code)
-    # module = lower_brainf(code, ctx=get_context())
+    # module = parse_brainf(code)
+    module = lower_brainf(code, ctx=get_context())
     print(module)
-    BrainFInterpreter().interpret(module)
+    # BrainFInterpreter().interpret(module)
