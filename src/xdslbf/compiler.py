@@ -10,6 +10,7 @@ from xdsl.dialects import (
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
+from xdslbf.emulator.interpreter import BrainFInterpreter
 from xdslbf.frontend.parser import BrainFParser
 from xdslbf.rewrites.lower_brainf import LowerBfToBuiltinPass
 
@@ -21,7 +22,6 @@ def get_context() -> Context:
     ctx.load_dialect(scf.Scf)
     ctx.load_dialect(Builtin)
     ctx.load_dialect(bf.BrainF)
-
     return ctx
 
 
@@ -38,6 +38,8 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
 
 
 if __name__ == "__main__":
-    code = ",[>++<-[>>++<-<]]."
+    code = "+>+>+"  # ",[>++<-[>>++<-<]]."
     module = parse_brainf(code)
+    # module = lower_brainf(code, ctx=get_context())
     print(module)
+    BrainFInterpreter().interpret(module)
