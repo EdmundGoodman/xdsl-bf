@@ -118,6 +118,24 @@ class RetOpLowering(RewritePattern):
         rewriter.erase_op(op)
 
 
+@dataclass
+class OutOpLowering(RewritePattern):
+    """A pattern to rewrite output operations."""
+
+    @op_type_rewrite_pattern
+    def match_and_rewrite(self, op: bf.RetOp, rewriter: PatternRewriter) -> None:
+        """Rewrite output operations."""
+
+
+@dataclass
+class InOpLowering(RewritePattern):
+    """A pattern to rewrite input operations."""
+
+    @op_type_rewrite_pattern
+    def match_and_rewrite(self, op: bf.InOp, rewriter: PatternRewriter) -> None:
+        """Rewrite input operations."""
+
+
 class LowerBfToBuiltinPass(ModulePass):
     """A pass for lowering operations in the bf dialect to only use builtin dialects."""
 
@@ -160,6 +178,8 @@ class LowerBfToBuiltinPass(ModulePass):
                     IncOpLowering(const_1, data_pointer, memory),
                     LoopOpLowering(const_0, const_1, data_pointer, memory),
                     RetOpLowering(),
+                    InOpLowering(),
+                    OutOpLowering(),
                 ]
             )
         ).rewrite_module(op)
