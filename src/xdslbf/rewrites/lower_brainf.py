@@ -85,34 +85,27 @@ class LoopOpLowering(RewritePattern):
         # Extract and detach the body of the `bf.loop` operation
         op.detach_region(loop_body := op.regions[0])
 
-        # Insert a while loop while the data value is non-zero over the loop body
-        rewriter.insert_op_before_matched_op(
-            [
-                scf.WhileOp(
-                    arguments=[],
-                    result_types=[],
-                    before_region=[
-                        Block(
-                            [
-                                load_pointer_op := memref.LoadOp.get(
-                                    self.data_pointer, []
-                                ),
-                                load_data_op := memref.LoadOp.get(
-                                    self.memory, [load_pointer_op]
-                                ),
-                                cmp_op := arith.CmpiOp(
-                                    load_data_op, self.const_0, "ne"
-                                ),
-                                scf.ConditionOp(cmp_op),
-                            ]
-                        )
-                    ],
-                    after_region=loop_body,
-                ),
-            ]
+        # Construct a while loop with the `bf.loop`'s body
+        while_loop = scf.WhileOp(
+            arguments=[],
+            result_types=[],
+            before_region=[
+                Block(
+                    [
+                        load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
+                        load_data_op := memref.LoadOp.get(
+                            self.memory, [load_pointer_op]
+                        ),
+                        cmp_op := arith.CmpiOp(load_data_op, self.const_0, "ne"),
+                        scf.ConditionOp(cmp_op),
+                    ]
+                )
+            ],
+            after_region=loop_body,
         )
-        # Erase the old loop operation
-        rewriter.erase_op(op)
+
+        # Replace the matched operation with the newly constructed while loop
+        rewriter.replace_matched_op(while_loop)
 
 
 @dataclass
