@@ -14,10 +14,10 @@ def test_emulator_simple_loop() -> None:
     assert interpreter.output == [10]
 
 
-def test_emulator_simple_loop_stdio(capsys: Any, monkeypatch: Any) -> None:
-    """Test the emulator runs a simple loop via stdio."""
-    monkeypatch.setattr("builtins.input", lambda _: "5")  # pyright: ignore[reportUnknownLambdaType]
-    code = ",[>++<-]>."
+def test_emulator_stdio(capsys: Any, monkeypatch: Any) -> None:
+    """Test the emulator can handle character input and output."""
+    monkeypatch.setattr("builtins.input", lambda _: "a")  # pyright: ignore[reportUnknownLambdaType]
+    code = ",."
     BrainFInterpreter().interpret(parse_brainf(code))
     captured = capsys.readouterr()
-    assert captured.out.strip() == "10"
+    assert captured.out.strip() == "a"
