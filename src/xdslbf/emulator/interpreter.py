@@ -42,35 +42,33 @@ class BrainFInterpreter:
     """Interpreter for the BrainF language."""
 
     pointer: int = 0
-    memory: dict[int, int] = field(default_factory=lambda: {0: 0})
+    memory: list[int] = field(default_factory=lambda: [0] * 30_000)
 
     output: list[int] | None = None
     input_: list[int] | None = None
 
     def _inc(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.inc` instruction."""
-        if self.pointer not in self.memory:
-            self.memory[self.pointer] = 1
-        else:
-            self.memory[self.pointer] += 1
+        self.memory[self.pointer] += 1
         return current_instr.next_op
 
     def _dec(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.dec` instruction."""
-        if self.pointer not in self.memory:
-            self.memory[self.pointer] = -1
-        else:
-            self.memory[self.pointer] -= 1
+        self.memory[self.pointer] -= 1
         return current_instr.next_op
 
     def _lshft(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.lshft` instruction."""
         self.pointer -= 1
+        if self.pointer < 0:
+            raise RuntimeError("Access beyond memory tape!")
         return current_instr.next_op
 
     def _rshft(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.rshft` instruction."""
         self.pointer += 1
+        if self.pointer > len(self.memory):
+            raise RuntimeError("Access beyond memory tape!")
         return current_instr.next_op
 
     def _out(self, current_instr: Operation) -> Operation | None:
@@ -79,16 +77,16 @@ class BrainFInterpreter:
         Alternative ASCII-based implementation:
 
         ```python
-        print(chr(self.memory.get(self.pointer, 0)))
+        print(chr(self.memory[self.pointer]))
         ```
         """
-        print(self.memory.get(self.pointer, 0))
+        print(self.memory[self.pointer])
         return current_instr.next_op
 
     def _out_list(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.out` instruction to a list."""
         assert self.output is not None
-        self.output.append(self.memory.get(self.pointer, 0))
+        self.output.append(self.memory[self.pointer])
         return current_instr.next_op
 
     def _in(self, current_instr: Operation) -> Operation | None:
