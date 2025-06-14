@@ -18,4 +18,4 @@
 
 ## Rewrites
 
-::: xdslbf.rewrites.lower_brainf
+::: xdslbf.rewrites.lower_llvm

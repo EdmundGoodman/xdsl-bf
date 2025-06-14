@@ -1,6 +1,6 @@
 # Project-specific
-# ...
 src/xdsl-docs
+tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
