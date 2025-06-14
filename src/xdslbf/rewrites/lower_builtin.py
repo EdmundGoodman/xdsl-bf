@@ -150,7 +150,15 @@ class InOpLowering(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: bf.InOp, rewriter: PatternRewriter) -> None:
         """Rewrite input operations."""
-        raise NotImplementedError("User input not yet supported!")
+        rewriter.insert_op_before_matched_op(
+            [
+                data := func.CallOp("getchar", [], [i32]),
+                load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
+                pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
+                memref.StoreOp.get(data, self.memory, [pointer_index]),
+            ]
+        )
+        rewriter.erase_op(op)
 
 
 class LowerBfToBuiltinPass(ModulePass):

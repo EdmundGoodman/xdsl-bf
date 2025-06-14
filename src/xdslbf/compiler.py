@@ -8,6 +8,7 @@ from xdsl.dialects import arith, llvm, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
+from xdslbf.emulator.interpreter import BrainFInterpreter
 from xdslbf.frontend.parser import BrainFParser
 from xdslbf.rewrites.lower_builtin import LowerBfToBuiltinPass
 
@@ -38,9 +39,17 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
 
 
 if __name__ == "__main__":
-    code = ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
-    # code = "+[>++<-]>"
+    code = (
+        ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++"
+        "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
+        "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
+    )
+    code = ",."
     module = parse_brainf(code)
-    # BrainFInterpreter().interpret(module)
-    module = lower_brainf(code, ctx=get_context())
-    print(module)
+    # print(module)
+
+    COMPILE = True
+    if COMPILE:
+        print(lower_brainf(code, ctx=get_context()))
+    else:
+        BrainFInterpreter().interpret(module)
