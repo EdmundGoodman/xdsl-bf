@@ -34,7 +34,6 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
     """Parse a BrainF program."""
     module = parse_brainf(program)
     LowerBfToBuiltinPass().apply(ctx, module)
-    # CanonicalizePass().apply(ctx, module)
     return module
 
 
@@ -44,7 +43,6 @@ if __name__ == "__main__":
         "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
         "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
     )
-    code = ",."
     module = parse_brainf(code)
     # print(module)
 

@@ -20,10 +20,6 @@ test: .venv/
 	uv run coverage run -m pytest -s &&\
  		uv run coverage report -m
 
-.PHONY: run
-run: .venv/
-	uv run jacks-menu
-
 .PHONY: publish
 publish:
 	uv build
@@ -49,11 +45,43 @@ clobber: clean
 	rm -rf .venv/
 
 
+build/out.mlir: .venv/
+	mkdir -p build &&\
+		python3 src/xdslbf/compiler.py > build/out.mlir
+
+build/lowered.mlir: build/out.mlir
+	mlir-opt build/out.mlir \
+		--convert-arith-to-llvm \
+		--convert-scf-to-cf \
+		--convert-cf-to-llvm \
+		--convert-func-to-llvm \
+		--finalize-memref-to-llvm \
+		--reconcile-unrealized-casts \
+		-o build/lowered.mlir
+
+build/optimised.mlir: build/lowered.mlir
+	mlir-opt build/lowered.mlir \
+		--canonicalize \
+		--cse \
+		--symbol-dce \
+		--inline \
+		--loop-invariant-code-motion \
+		--mem2reg \
+		--sroa \
+		--sccp \
+		--strip-debuginfo \
+		-o build/optimised.mlir
+
+build/out.ll: build/optimised.mlir
+	mlir-translate --mlir-to-llvmir build/lowered.mlir -o build/out.ll
+
+build/executable: build/out.ll
+	clang build/out.ll -o build/executable
+
+.PHONY: cleanbuild
+cleanbuild:
+	rm -rf build && mkdir -p build
+
 .PHONY: executable
-executable:
-	mkdir -p tmp &&\
-		python3 src/xdslbf/compiler.py > tmp/out.mlir && cd tmp &&\
-		mlir-opt out.mlir --convert-arith-to-llvm --convert-scf-to-cf --convert-cf-to-llvm --convert-func-to-llvm --finalize-memref-to-llvm --reconcile-unrealized-casts -o outllvm.mlir &&\
-		mlir-translate --mlir-to-llvmir outllvm.mlir -o out.ll &&\
-		clang out.ll -o executable &&\
-		./executable
+executable: cleanbuild build/executable
+	./build/executable
