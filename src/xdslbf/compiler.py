@@ -10,9 +10,6 @@ from xdsl.dialects.builtin import Builtin, ModuleOp
 from xdslbf.dialects import bf
 from xdslbf.frontend.parser import BrainFParser
 from xdslbf.rewrites.lower_builtin import LowerBfToBuiltinPass
-from xdslbf.rewrites.lower_llvm import LowerBfBuiltinToLlvmExecutablePass
-
-# from xdslbf.emulator.interpreter import BrainFInterpreter
 
 
 def get_context() -> Context:
@@ -36,14 +33,14 @@ def lower_brainf(program: str, ctx: Context) -> ModuleOp:
     """Parse a BrainF program."""
     module = parse_brainf(program)
     LowerBfToBuiltinPass().apply(ctx, module)
-    LowerBfBuiltinToLlvmExecutablePass().apply(ctx, module)
     # CanonicalizePass().apply(ctx, module)
     return module
 
 
 if __name__ == "__main__":
-    code = "+++[>++<-]>"  # ",[>++<-[>>++<-<]]."
-    # module = parse_brainf(code)
+    code = ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++[<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
+    # code = "+[>++<-]>"
+    module = parse_brainf(code)
+    # BrainFInterpreter().interpret(module)
     module = lower_brainf(code, ctx=get_context())
     print(module)
-    # BrainFInterpreter().interpret(module)

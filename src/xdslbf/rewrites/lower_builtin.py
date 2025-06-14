@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from xdsl.context import Context
-from xdsl.dialects import arith, memref, printf, scf
-from xdsl.dialects.builtin import IndexType, ModuleOp, i64
-from xdsl.ir import Block
+from xdsl.dialects import arith, func, memref, scf
+from xdsl.dialects.builtin import IndexType, ModuleOp, i32
+from xdsl.ir import Block, Region
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import (
     GreedyRewritePatternApplier,
@@ -38,7 +38,7 @@ class ShiftOpLowering(RewritePattern):
             op,
             [
                 load_op := memref.LoadOp.get(self.data_pointer, []),
-                const_1 := arith.ConstantOp.from_int_and_width(1, i64),
+                const_1 := arith.ConstantOp.from_int_and_width(1, i32),
                 inc_op := arith_op(load_op, const_1),
                 memref.StoreOp.get(inc_op, self.data_pointer, []),
             ],
@@ -64,7 +64,7 @@ class IncOpLowering(RewritePattern):
                 load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
                 pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
                 load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
-                const_1 := arith.ConstantOp.from_int_and_width(1, i64),
+                const_1 := arith.ConstantOp.from_int_and_width(1, i32),
                 inc_op := arith_op(load_data_op, const_1),
                 memref.StoreOp.get(inc_op, self.memory, [pointer_index]),
             ],
@@ -92,11 +92,11 @@ class LoopOpLowering(RewritePattern):
                 Block(
                     [
                         load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
-                        pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
-                        load_data_op := memref.LoadOp.get(
-                            self.memory, [pointer_index]
+                        pointer_index := arith.IndexCastOp(
+                            load_pointer_op, IndexType()
                         ),
-                        const_0 := arith.ConstantOp.from_int_and_width(0, i64),
+                        load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
+                        const_0 := arith.ConstantOp.from_int_and_width(0, i32),
                         cmp_op := arith.CmpiOp(load_data_op, const_0, "ne"),
                         scf.ConditionOp(cmp_op),
                     ]
@@ -129,15 +129,15 @@ class OutOpLowering(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: bf.OutOp, rewriter: PatternRewriter) -> None:
         """Rewrite output operations."""
-        rewriter.replace_op(
-            op,
+        rewriter.insert_op_before_matched_op(
             [
                 load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
                 pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
                 load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
-                printf.PrintFormatOp("%d", load_data_op),
-            ],
+                func.CallOp("putchar", [load_data_op], [i32]),
+            ]
         )
+        rewriter.erase_op(op)
 
 
 @dataclass
@@ -165,14 +165,30 @@ class LowerBfToBuiltinPass(ModulePass):
 
         This includes allocating the data pointer and the memory region.
         """
-        block = op.body.block
+        # Lift the ir into a main function
+        op.detach_region(region := op.body)
+        block = region.block
+        op.add_region(
+            Region(
+                outer_block := Block([func.FuncOp("main", ((), (i32,)), region=region)])
+            )
+        )
 
-        # Instantiation the operations setting up the runtime
+        # Instantiate the operations to register IO functions
         setup: list[Operation] = [
-            const_0 := arith.ConstantOp.from_int_and_width(0, i64),
-            data_pointer_alloca_op := memref.AllocaOp.get(i64, 64, []),
+            func.FuncOp.external("putchar", (i32,), (i32,)),
+            func.FuncOp.external("getchar", (), (i32,)),
+        ]
+        assert outer_block.first_op is not None
+        for new_op in setup:
+            outer_block.insert_op_before(new_op, outer_block.first_op)
+
+        # Instantiate the operations setting up the runtime
+        setup: list[Operation] = [
+            const_0 := arith.ConstantOp.from_int_and_width(0, i32),
+            data_pointer_alloca_op := memref.AllocaOp.get(i32, 64, []),
             memref.StoreOp.get(const_0, data_pointer_alloca_op, []),
-            memory_alloc_op := memref.AllocOp.get(i64, 64, [memory_size]),
+            memory_alloc_op := memref.AllocOp.get(i32, 64, [memory_size]),
         ]
         first_op = block.first_op
         if first_op is not None:
@@ -180,11 +196,12 @@ class LowerBfToBuiltinPass(ModulePass):
         else:
             block.add_ops(setup)
 
-        # Instantiation the operations tearing down up the runtime
+        # Instantiate the operations tearing down up the runtime
         block.add_ops(
             [
                 memref.DeallocOp.get(memory_alloc_op),
-                # memref.DeallocOp.get(data_pointer_alloca_op),
+                const_0 := arith.ConstantOp.from_int_and_width(0, i32),
+                func.ReturnOp(const_0),
             ]
         )
 

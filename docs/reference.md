@@ -18,4 +18,4 @@
 
 ## Rewrites
 
-::: xdslbf.rewrites.lower_llvm
+::: xdslbf.rewrites.lower_builtin

@@ -55,4 +55,5 @@ executable:
 		python3 src/xdslbf/compiler.py > tmp/out.mlir && cd tmp &&\
 		mlir-opt out.mlir --convert-arith-to-llvm --convert-scf-to-cf --convert-cf-to-llvm --convert-func-to-llvm --finalize-memref-to-llvm --reconcile-unrealized-casts -o outllvm.mlir &&\
 		mlir-translate --mlir-to-llvmir outllvm.mlir -o out.ll &&\
-		clang out.ll -o executable
+		clang out.ll -o executable &&\
+		./executable

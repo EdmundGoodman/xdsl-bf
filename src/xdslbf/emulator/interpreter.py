@@ -72,15 +72,8 @@ class BrainFInterpreter:
         return current_instr.next_op
 
     def _out(self, current_instr: Operation) -> Operation | None:
-        """Interpret the `bf.out` instruction.
-
-        Alternative ASCII-based implementation:
-
-        ```python
-        print(chr(self.memory[self.pointer]))
-        ```
-        """
-        print(self.memory[self.pointer])
+        """Interpret the `bf.out` instruction."""
+        print(chr(self.memory[self.pointer]), end="")
         return current_instr.next_op
 
     def _out_list(self, current_instr: Operation) -> Operation | None:
@@ -90,15 +83,8 @@ class BrainFInterpreter:
         return current_instr.next_op
 
     def _in(self, current_instr: Operation) -> Operation | None:
-        """Interpret the `bf.in` instruction.
-
-        Alternative ASCII-based implementation:
-
-        ```python
+        """Interpret the `bf.in` instruction."""
         self.memory[self.pointer] = ord(input("> ")[0])
-        ```
-        """
-        self.memory[self.pointer] = int(input("> "))
         return current_instr.next_op
 
     def _in_list(self, current_instr: Operation) -> Operation | None:
