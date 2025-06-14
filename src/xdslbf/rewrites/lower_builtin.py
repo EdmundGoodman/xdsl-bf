@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from xdsl.context import Context
 from xdsl.dialects import arith, memref, printf, scf
-from xdsl.dialects.builtin import IndexType, ModuleOp, i32
+from xdsl.dialects.builtin import IndexType, ModuleOp, i64
 from xdsl.ir import Block
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import (
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class ShiftOpLowering(RewritePattern):
     """A pattern to rewrite left and right shift operations."""
 
-    data_pointer: memref.AllocOp
+    data_pointer: memref.AllocaOp
 
     @op_type_rewrite_pattern
     def match_and_rewrite(
@@ -38,7 +38,7 @@ class ShiftOpLowering(RewritePattern):
             op,
             [
                 load_op := memref.LoadOp.get(self.data_pointer, []),
-                const_1 := arith.ConstantOp.from_int_and_width(1, IndexType()),
+                const_1 := arith.ConstantOp.from_int_and_width(1, i64),
                 inc_op := arith_op(load_op, const_1),
                 memref.StoreOp.get(inc_op, self.data_pointer, []),
             ],
@@ -49,7 +49,7 @@ class ShiftOpLowering(RewritePattern):
 class IncOpLowering(RewritePattern):
     """A pattern to rewrite increment and decrement operations."""
 
-    data_pointer: memref.AllocOp
+    data_pointer: memref.AllocaOp
     memory: memref.AllocOp
 
     @op_type_rewrite_pattern
@@ -62,10 +62,11 @@ class IncOpLowering(RewritePattern):
             op,
             [
                 load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
-                load_data_op := memref.LoadOp.get(self.memory, [load_pointer_op]),
-                const_1 := arith.ConstantOp.from_int_and_width(1, i32),
+                pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
+                load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
+                const_1 := arith.ConstantOp.from_int_and_width(1, i64),
                 inc_op := arith_op(load_data_op, const_1),
-                memref.StoreOp.get(inc_op, self.memory, [load_pointer_op]),
+                memref.StoreOp.get(inc_op, self.memory, [pointer_index]),
             ],
         )
 
@@ -74,7 +75,7 @@ class IncOpLowering(RewritePattern):
 class LoopOpLowering(RewritePattern):
     """A pattern to rewrite loop operations."""
 
-    data_pointer: memref.AllocOp
+    data_pointer: memref.AllocaOp
     memory: memref.AllocOp
 
     @op_type_rewrite_pattern
@@ -91,10 +92,11 @@ class LoopOpLowering(RewritePattern):
                 Block(
                     [
                         load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
+                        pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
                         load_data_op := memref.LoadOp.get(
-                            self.memory, [load_pointer_op]
+                            self.memory, [pointer_index]
                         ),
-                        const_0 := arith.ConstantOp.from_int_and_width(0, i32),
+                        const_0 := arith.ConstantOp.from_int_and_width(0, i64),
                         cmp_op := arith.CmpiOp(load_data_op, const_0, "ne"),
                         scf.ConditionOp(cmp_op),
                     ]
@@ -121,7 +123,7 @@ class RetOpLowering(RewritePattern):
 class OutOpLowering(RewritePattern):
     """A pattern to rewrite output operations."""
 
-    data_pointer: memref.AllocOp
+    data_pointer: memref.AllocaOp
     memory: memref.AllocOp
 
     @op_type_rewrite_pattern
@@ -131,7 +133,8 @@ class OutOpLowering(RewritePattern):
             op,
             [
                 load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
-                load_data_op := memref.LoadOp.get(self.memory, [load_pointer_op]),
+                pointer_index := arith.IndexCastOp(load_pointer_op, IndexType()),
+                load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
                 printf.PrintFormatOp("%d", load_data_op),
             ],
         )
@@ -141,7 +144,7 @@ class OutOpLowering(RewritePattern):
 class InOpLowering(RewritePattern):
     """A pattern to rewrite input operations."""
 
-    data_pointer: memref.AllocOp
+    data_pointer: memref.AllocaOp
     memory: memref.AllocOp
 
     @op_type_rewrite_pattern
@@ -157,7 +160,7 @@ class LowerBfToBuiltinPass(ModulePass):
 
     def build_brainf_environment(
         self, _ctx: Context, op: ModuleOp, memory_size: int = 30_000
-    ) -> tuple[memref.AllocOp, memref.AllocOp]:
+    ) -> tuple[memref.AllocaOp, memref.AllocOp]:
         """Build the brainf environment.
 
         This includes allocating the data pointer and the memory region.
@@ -166,10 +169,10 @@ class LowerBfToBuiltinPass(ModulePass):
 
         # Instantiation the operations setting up the runtime
         setup: list[Operation] = [
-            const_0 := arith.ConstantOp.from_int_and_width(0, IndexType()),
-            data_pointer_alloc_op := memref.AllocOp.get(IndexType(), 32, []),
-            memref.StoreOp.get(const_0, data_pointer_alloc_op, []),
-            memory_alloc_op := memref.AllocOp.get(i32, 32, [memory_size]),
+            const_0 := arith.ConstantOp.from_int_and_width(0, i64),
+            data_pointer_alloca_op := memref.AllocaOp.get(i64, 64, []),
+            memref.StoreOp.get(const_0, data_pointer_alloca_op, []),
+            memory_alloc_op := memref.AllocOp.get(i64, 64, [memory_size]),
         ]
         first_op = block.first_op
         if first_op is not None:
@@ -181,12 +184,12 @@ class LowerBfToBuiltinPass(ModulePass):
         block.add_ops(
             [
                 memref.DeallocOp.get(memory_alloc_op),
-                memref.DeallocOp.get(data_pointer_alloc_op),
+                # memref.DeallocOp.get(data_pointer_alloca_op),
             ]
         )
 
         # Return SSA references to operations used by the lowering passes
-        return (data_pointer_alloc_op, memory_alloc_op)
+        return (data_pointer_alloca_op, memory_alloc_op)
 
     def apply(self, ctx: Context, op: ModuleOp) -> None:
         """Apply the lowering pass."""

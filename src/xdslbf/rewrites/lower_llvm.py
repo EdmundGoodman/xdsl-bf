@@ -36,29 +36,29 @@ class LowerBfBuiltinToLlvmExecutablePass(ModulePass):
                 func.ReturnOp(const_0),
             ]
         )
-        block.insert_op_before(
-            llvm.FuncOp(
-                "printf",
-                llvm.LLVMFunctionType(
-                    [llvm.LLVMPointerType.opaque()], is_variadic=True
-                ),
-                linkage=llvm.LinkageAttr("external"),
-            ),
-            main_func,
-        )
+        # block.insert_op_before(
+        #     llvm.FuncOp(
+        #         "printf",
+        #         llvm.LLVMFunctionType(
+        #             [llvm.LLVMPointerType.opaque()], is_variadic=True
+        #         ),
+        #         linkage=llvm.LinkageAttr("external"),
+        #     ),
+        #     main_func,
+        # )
 
     def apply(self, ctx: Context, op: ModuleOp) -> None:
         """Apply the lowering pass."""
         self.build_executable(ctx, op)
 
-        add_printf_call = PrintlnOpToPrintfCall()
+        # add_printf_call = PrintlnOpToPrintfCall()
         PatternRewriteWalker(
             GreedyRewritePatternApplier(
                 [
-                    add_printf_call,
+                    # add_printf_call,
                 ]
             )
         ).rewrite_module(op)
 
-        if add_printf_call.collected_global_symbs:
-            op.body.block.add_ops(add_printf_call.collected_global_symbs.values())
+        # if add_printf_call.collected_global_symbs:
+        #     op.body.block.add_ops(add_printf_call.collected_global_symbs.values())
