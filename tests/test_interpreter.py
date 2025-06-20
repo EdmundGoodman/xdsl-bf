@@ -1,4 +1,4 @@
-"""Unit tests for the emulator."""
+"""Unit tests for the interpreter."""
 
 from typing import Any
 

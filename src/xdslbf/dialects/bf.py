@@ -1,4 +1,4 @@
-"""Dialect for BrainF's stack machine.
+"""Dialect for BrainF's instruction set.
 
 From [Wikipedia](https://en.wikipedia.org/wiki/Brainfuck#Language_design):
 
