@@ -8,7 +8,7 @@ from xdsl.dialects import arith, func, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
-from xdslbf.frontend.parser import BrainFParser
+from xdslbf.frontend import BrainFParser
 from xdslbf.interpreters.interpreter import BrainFInterpreter
 from xdslbf.transforms.lower_builtin import LowerBfToBuiltinPass
 

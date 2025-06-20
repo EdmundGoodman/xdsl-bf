@@ -19,7 +19,7 @@ from xdslbf.dialects.bf import (
     RetOp,
     RshftOp,
 )
-from xdslbf.frontend.lexer import BrainFLexer, BrainFTokenKind
+from xdslbf.frontend import BrainFLexer, BrainFTokenKind
 
 OPERATION_LOOKUP: dict[BrainFTokenKind, type[BrainFOperation]] = {
     BrainFTokenKind.PLUS: IncOp,
