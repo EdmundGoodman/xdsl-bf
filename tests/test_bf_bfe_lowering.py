@@ -48,11 +48,10 @@ builtin.module {
   }) : (index) -> index
   "bf.out"() : () -> ()
 }"""
-    print(module)
     assert str(module) == expected
 
 
-def test_valid_parse(ctx: Context) -> None:
+def test_valid_bfe_lowering(ctx: Context) -> None:
     """Test lowering a parsed program from bf to bfe exercising all instructions."""
     code = ",[>++<-]."
     module = parse_brainf(code)
@@ -61,7 +60,7 @@ def test_valid_parse(ctx: Context) -> None:
 builtin.module {
   %0 = arith.constant 0 : index
   "bf.in"() : () -> ()
-  %1 = "bfe.while"(%0) <{move = 0 : index}> ({
+  %1 = "bfe.while"(%0) ({
     %2 = "bfe.mem"(%0) <{move = 1 : index}> ({
     ^0:
     }) : (index) -> index
@@ -86,9 +85,47 @@ builtin.module {
       %15 = arith.subi %13, %14 : i32
       bfe.store %15 0
     }) : (index) -> index
-    "bf.ret"() : () -> ()
+    bfe.continue %12
   }) : (index) -> index
   "bf.out"() : () -> ()
 }"""
-    print(module)
+    assert str(module) == expected
+
+
+def test_multiloop_bfe_lowering(ctx: Context) -> None:
+    """Test lowering a parsed program from bf to bfe with multiple loops."""
+    code = "[-[-][-]]"
+    module = parse_brainf(code)
+    LowerBfToBfePass().apply(ctx, module)
+    expected = """\
+builtin.module {
+  %0 = arith.constant 0 : index
+  %1 = "bfe.while"(%0) ({
+    %2 = "bfe.mem"(%0) <{move = 0 : index}> ({
+      %3 = bfe.load 0 : i32
+      %4 = arith.constant 1 : i32
+      %5 = arith.subi %3, %4 : i32
+      bfe.store %5 0
+    }) : (index) -> index
+    %6 = "bfe.while"(%2) ({
+      %7 = "bfe.mem"(%2) <{move = 0 : index}> ({
+        %8 = bfe.load 0 : i32
+        %9 = arith.constant 1 : i32
+        %10 = arith.subi %8, %9 : i32
+        bfe.store %10 0
+      }) : (index) -> index
+      bfe.continue %7
+    }) : (index) -> index
+    %11 = "bfe.while"(%6) ({
+      %12 = "bfe.mem"(%6) <{move = 0 : index}> ({
+        %13 = bfe.load 0 : i32
+        %14 = arith.constant 1 : i32
+        %15 = arith.subi %13, %14 : i32
+        bfe.store %15 0
+      }) : (index) -> index
+      bfe.continue %12
+    }) : (index) -> index
+    bfe.continue %11
+  }) : (index) -> index
+}"""
     assert str(module) == expected

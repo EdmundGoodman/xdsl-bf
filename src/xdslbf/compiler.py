@@ -9,7 +9,6 @@ from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
 from xdslbf.frontend import BrainFParser
-from xdslbf.interpreters.bf import BrainFInterpreter
 from xdslbf.transforms.lower_bf_bfe import LowerBfToBfePass
 from xdslbf.transforms.lower_bf_builtin import LowerBfToBuiltinPass
 
@@ -42,6 +41,7 @@ def lower_bf_bfe(program: str, ctx: Context) -> ModuleOp:
     """Parse a BrainF program and lower it to a better custom IR."""
     module = parse_brainf(program)
     LowerBfToBfePass().apply(ctx, module)
+    # OptimiseBfePass().apply(ctx, module)
     return module
 
 
@@ -51,12 +51,12 @@ if __name__ == "__main__":
     #     "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
     #     "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
     # )
-    code = "+[>]+"
-    module = parse_brainf(code)
+    code = "[-[-][-]]"  # "+[>][>]+"
 
     COMPILE = True
     if COMPILE:
         print(lower_bf_bfe(code, ctx=get_context()))
     else:
+        module = parse_brainf(code)
         print(module)
-        BrainFInterpreter().interpret(module)
+        # BrainFInterpreter().interpret(module)

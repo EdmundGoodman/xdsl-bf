@@ -22,6 +22,7 @@ from xdsl.irdl import (
     traits_def,
 )
 from xdsl.traits import (
+    IsTerminator,
     MemoryReadEffect,
     MemoryWriteEffect,
     NoTerminator,
@@ -38,7 +39,6 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
     """Block in the IR for the BrainF language."""
 
     start_pointer = operand_def(IndexType())
-    move = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
     end_pointer = result_def(IndexType())
     body = region_def()
 
@@ -46,7 +46,6 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
         self,
         pointer: Operation | SSAValue,
         *,
-        move: int = 0,
         regions: Sequence[Region] | None = None,
         properties: dict[str, Attribute | None] | None = None,
         result_types: tuple[IndexType] = (IndexType(),),
@@ -55,9 +54,6 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
         """Default to a single empty region."""
         if regions is None:
             regions = [Region([Block()])]
-        if properties is None:
-            properties = {}
-        properties |= {"move": IntegerAttr(move, IndexType())}
         super().__init__(
             operands=(pointer,),
             result_types=result_types,
@@ -73,9 +69,32 @@ class MemoryOp(BrainFExtendedBlock):
 
     name = "bfe.mem"
 
+    move = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
     traits = traits_def(
         RecursiveMemoryEffect(), NoTerminator(), SameOperandsAndResultType()
     )
+
+    def __init__(
+        self,
+        pointer: Operation | SSAValue,
+        *,
+        move: int = 0,
+        regions: Sequence[Region] | None = None,
+        properties: dict[str, Attribute | None] | None = None,
+        result_types: tuple[IndexType] = (IndexType(),),
+        **kwargs: Any,
+    ):
+        """Set the move offset as a property."""
+        if properties is None:
+            properties = {}
+        properties |= {"move": IntegerAttr(move, IndexType())}
+        super().__init__(
+            pointer=pointer,
+            result_types=result_types,
+            regions=regions,
+            properties=properties,
+            **kwargs,
+        )
 
 
 @irdl_op_definition
@@ -84,9 +103,30 @@ class WhileOp(BrainFExtendedBlock):
 
     name = "bfe.while"
 
-    traits = traits_def(
-        RecursiveMemoryEffect(), NoTerminator(), SameOperandsAndResultType()
-    )
+    traits = traits_def(RecursiveMemoryEffect(), SameOperandsAndResultType())
+
+
+@irdl_op_definition
+class ContinueOp(IRDLOperation):
+    """Unbounded iteration whilst the entry memory value is non-zero."""
+
+    name = "bfe.continue"
+    end_pointer = operand_def(IndexType())
+
+    traits = traits_def(IsTerminator())
+
+    assembly_format = "attr-dict $end_pointer"
+
+    def __init__(
+        self,
+        pointer: Operation | SSAValue,
+        **kwargs: Any,
+    ):
+        """Construct with the pointer to return with."""
+        super().__init__(
+            operands=(pointer,),
+            **kwargs,
+        )
 
 
 @irdl_op_definition
@@ -136,6 +176,7 @@ BrainFExtended = Dialect(
     [
         MemoryOp,
         WhileOp,
+        ContinueOp,
         LoadOp,
         StoreOp,
     ],

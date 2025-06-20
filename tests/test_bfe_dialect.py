@@ -24,7 +24,8 @@ def test_bf_builder() -> None:
 
         while_op_1 = bfe.WhileOp(pointer=mem_op_1)
         with ImplicitBuilder(while_op_1.body):
-            bfe.MemoryOp(pointer=while_op_1.operands[0], move=1)
+            move_op = bfe.MemoryOp(pointer=while_op_1.operands[0], move=1)
+            bfe.ContinueOp(move_op)
 
     expected = """\
 builtin.module {
@@ -35,10 +36,11 @@ builtin.module {
     %4 = arith.addi %2, %3 : i32
     bfe.store %4 2
   }) : (index) -> index
-  %5 = "bfe.while"(%1) <{move = 0 : index}> ({
+  %5 = "bfe.while"(%1) ({
     %6 = "bfe.mem"(%1) <{move = 1 : index}> ({
     ^0:
     }) : (index) -> index
+    bfe.continue %6
   }) : (index) -> index
 }"""
     assert str(module) == expected

@@ -78,9 +78,10 @@ class BfOpLowering(RewritePattern):
         self.data_pointer.append(while_op.operands[0])
 
     def rewrite_ret_op(
-        self, _op: bf.BrainFOperation, _rewriter: PatternRewriter
+        self, _op: bf.BrainFOperation, rewriter: PatternRewriter
     ) -> None:
         """Rewrite a return operation."""
+        rewriter.replace_matched_op(bfe.ContinueOp(self.data_pointer[-1]))
         self.data_pointer.pop()
 
     @op_type_rewrite_pattern
