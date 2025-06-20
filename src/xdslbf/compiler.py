@@ -9,7 +9,7 @@ from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
 from xdslbf.frontend import BrainFParser
-from xdslbf.interpreters.interpreter import BrainFInterpreter
+from xdslbf.interpreters.bf import BrainFInterpreter
 from xdslbf.transforms.lower_bf_builtin import LowerBfToBuiltinPass
 
 

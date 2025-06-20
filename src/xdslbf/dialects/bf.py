@@ -19,9 +19,10 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Brainfuck#Language_design):
 """
 
 import abc
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from xdsl.ir import Block, Dialect, Region, Operation
+from xdsl.ir import Block, Dialect, Operation, Region
 from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
@@ -107,7 +108,7 @@ class LoopOp(BrainFOperation):
             ]
             | None
         ) = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """Default to a single empty region."""
         if regions is None:
