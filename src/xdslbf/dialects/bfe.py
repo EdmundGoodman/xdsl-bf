@@ -10,24 +10,32 @@ import abc
 from collections.abc import Sequence
 from typing import Any
 
-from xdsl.dialects.builtin import IndexType
-from xdsl.dialects.func import ReturnOp
+from xdsl.dialects.builtin import I32, IndexType, IndexTypeConstr, IntegerAttr, i32
 from xdsl.ir import Block, Dialect, Operation, Region, SSAValue
 from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
     operand_def,
+    prop_def,
     region_def,
     result_def,
     traits_def,
     var_operand_def,
-
 )
-from xdsl.traits import MemoryReadEffect, MemoryWriteEffect, HasParent, IsTerminator
+from xdsl.traits import (
+    HasParent,
+    IsTerminator,
+    MemoryReadEffect,
+    MemoryWriteEffect,
+    RecursiveMemoryEffect,
+    SameOperandsAndResultType,
+)
 from xdsl.utils.exceptions import VerifyException
+
 
 class BrainFExtendedOperation(IRDLOperation, abc.ABC):
     """An extended IR for the BrainF language."""
+
 
 class BrainFExtendedBlock(BrainFExtendedOperation):
     """Block in the IR for the BrainF language."""
@@ -40,7 +48,7 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
         self,
         pointer: Operation | SSAValue,
         *,
-        result_types: tuple[IndexType] | None = None,
+        result_types: tuple[IndexType] = (IndexType(),),
         regions: (
             Sequence[
                 Region
@@ -51,20 +59,14 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
             ]
             | None
         ) = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """Default to a single empty region."""
         if regions is None:
             regions = [Region([Block()])]
-        if result_types is None:
-            result_types = (IndexType(),)
         super().__init__(
-            operands=(pointer,),
-            result_types=result_types,
-            regions=regions,
-            **kwargs
+            operands=(pointer,), result_types=result_types, regions=regions, **kwargs
         )
-
 
 
 @irdl_op_definition
@@ -73,7 +75,7 @@ class MemoryOp(BrainFExtendedBlock):
 
     name = "bfe.mem"
 
-    traits = traits_def(MemoryWriteEffect())
+    traits = traits_def(RecursiveMemoryEffect(), SameOperandsAndResultType())
 
 
 @irdl_op_definition
@@ -82,7 +84,49 @@ class WhileOp(BrainFExtendedBlock):
 
     name = "bfe.while"
 
+    traits = traits_def(RecursiveMemoryEffect(), SameOperandsAndResultType())
+
+
+@irdl_op_definition
+class LoadOp(IRDLOperation):
+    """Load memory from the tape at a specified offset."""
+
+    name = "bfe.load"
+
+    offset = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
+    data = result_def(i32)
     traits = traits_def(MemoryReadEffect())
+
+    assembly_format = "attr-dict $offset `:` type($data)"
+
+    def __init__(self, offset: int, result_types: tuple[I32] = (i32,), **kwargs: Any):
+        """Specify the data to store."""
+        super().__init__(
+            result_types=result_types,
+            properties={"offset": IntegerAttr(offset, IndexType())},
+            **kwargs,
+        )
+
+
+@irdl_op_definition
+class StoreOp(IRDLOperation):
+    """Store back into memory in the tape at a specified offset."""
+
+    name = "bfe.store"
+
+    offset = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
+    data = operand_def(i32)
+    traits = traits_def(MemoryWriteEffect())
+
+    assembly_format = "$data attr-dict $offset"
+
+    def __init__(self, data: Operation | SSAValue, offset: int, **kwargs: Any):
+        """Specify the data to store."""
+        super().__init__(
+            operands=[data],
+            properties={"offset": IntegerAttr(offset, IndexType())},
+            **kwargs,
+        )
 
 
 @irdl_op_definition
@@ -106,8 +150,6 @@ class MoveOp(IRDLOperation):
             raise VerifyException(
                 "Expected arguments to have the same types as the function output types"
             )
-
-
 
 
 BrainFExtended = Dialect(

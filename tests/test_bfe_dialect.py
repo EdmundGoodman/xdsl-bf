@@ -2,10 +2,9 @@
 
 from xdsl.builder import ImplicitBuilder
 from xdsl.dialects import arith
-from xdsl.dialects.builtin import ModuleOp, IndexType
-from xdsl.ir import Block, Dialect, Operation, Region
+from xdsl.dialects.builtin import IndexType, ModuleOp, i32
 
-from xdslbf.dialects import bf, bfe
+from xdslbf.dialects import bfe
 
 
 def test_bf_builder() -> None:
@@ -18,6 +17,10 @@ def test_bf_builder() -> None:
             pointer=pointer_init,
         )
         with ImplicitBuilder(mem_op_1.body):
+            data = bfe.LoadOp(2)
+            const_1 = arith.ConstantOp.from_int_and_width(1, i32)
+            new_data = arith.AddiOp(data, const_1)
+            bfe.StoreOp(new_data, 2)
             bfe.MoveOp(mem_op_1.operands[0])
 
         while_op_1 = bfe.WhileOp(pointer=mem_op_1)
@@ -33,10 +36,14 @@ def test_bf_builder() -> None:
 builtin.module {
   %0 = arith.constant 0 : index
   %1 = "bfe.mem"(%0) ({
+    %2 = bfe.load 2 : i32
+    %3 = arith.constant 1 : i32
+    %4 = arith.addi %2, %3 : i32
+    bfe.store %4 2
     bfe.move %0 : index
   }) : (index) -> index
-  %2 = "bfe.while"(%1) ({
-    %3 = "bfe.mem"(%1) ({
+  %5 = "bfe.while"(%1) ({
+    %6 = "bfe.mem"(%1) ({
       bfe.move %1 : index
     }) : (index) -> index
     bfe.move %1 : index
