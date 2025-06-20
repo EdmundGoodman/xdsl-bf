@@ -2,7 +2,6 @@
 
 from xdsl.builder import ImplicitBuilder
 from xdsl.dialects.builtin import ModuleOp
-from xdsl.ir import Block, Region
 
 from xdslbf.dialects import bf
 
@@ -13,7 +12,7 @@ def test_bf_builder() -> None:
     with ImplicitBuilder(module.body):
         bf.InOp()
         bf.IncOp()
-        loop = bf.LoopOp(regions=[Region([Block([])])])
+        loop = bf.LoopOp()
         with ImplicitBuilder(loop.body):
             bf.RshftOp()
             bf.DecOp()

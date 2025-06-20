@@ -3,7 +3,7 @@
 from typing import Any
 
 from xdslbf.compiler import parse_brainf
-from xdslbf.interpreters import BrainFInterpreter
+from xdslbf.interpreters.bf import BrainFInterpreter
 
 
 def test_emulator_simple_loop() -> None:

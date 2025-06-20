@@ -19,8 +19,9 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Brainfuck#Language_design):
 """
 
 import abc
+from typing import Any, Sequence
 
-from xdsl.ir import Dialect
+from xdsl.ir import Block, Dialect, Region, Operation
 from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
@@ -92,6 +93,26 @@ class LoopOp(BrainFOperation):
 
     body = region_def()
     traits = traits_def(MemoryReadEffect())
+
+    def __init__(
+        self,
+        *,
+        regions: (
+            Sequence[
+                Region
+                | None
+                | Sequence[Operation]
+                | Sequence[Block]
+                | Sequence[Region | Sequence[Operation] | Sequence[Block]]
+            ]
+            | None
+        ) = None,
+        **kwargs: Any
+    ):
+        """Default to a single empty region."""
+        if regions is None:
+            regions = [Region([Block()])]
+        super().__init__(regions=regions, **kwargs)
 
 
 @irdl_op_definition
