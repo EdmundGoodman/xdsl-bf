@@ -1,11 +1,18 @@
 MAKEFLAGS += --warn-undefined-variables
 SHELL := bash
 
+# allow overriding which dependency groups are installed
+VENV_GROUPS ?= --group dev --group docs
+
+# set default lit options
+LIT_OPTIONS ?= -v --order=smart
+
+
 .PHONY: install
 install: .venv/ pre-commit
 
 .venv/:
-	uv sync
+	uv sync ${VENV_GROUPS}
 
 .PHONY: pre-commit
 pre-commit: .venv/
@@ -15,35 +22,38 @@ pre-commit: .venv/
 check: .venv/
 	uv run pre-commit run --all-files
 
-.PHONY: test
-test: .venv/
-	uv run coverage run -m pytest -s &&\
- 		uv run coverage report -m
+.PHONY: pyright
+pyright: .venv/
+	uv run pyright $(shell git diff --staged --name-only  -- '*.py')
 
-.PHONY: publish
-publish:
-	uv build
-	uv publish
+.PHONY: test
+test: pytest filecheck
+
+.PHONY: pytest
+pytest: .venv/
+	uv run pytest -W error --cov
+
+.PHONY: filecheck
+filecheck: .venv/
+	uv run lit $(LIT_OPTIONS) tests/filecheck
 
 .PHONY: docs
 docs: .venv/
-	uv run mkdocs build --strict
+	uv run mkdocs serve
+	uv run mkdocs build
 
-.PHONY: view_docs
-view_docs:
-	@open site/index.html
-
-.PHONY: clean
-clean:
+.PHONY: clean-caches
+clean-caches:
 	rm -rf .mypy_cache/ .pytest_cache/ .ruff_cache/ .coverage
 	find . -not -path "./.venv/*" | \
 		grep -E "(/__pycache__$$|\.pyc$$|\.pyo$$)" | \
 		xargs rm -rf
 
-.PHONY: clobber
-clobber: clean
-	rm -rf .venv/
+.PHONY: clean
+clean: clean-caches
+	rm -rf ${VENV_DIR}
 
+# ============================================================================ #
 
 build/out.mlir: .venv/
 	mkdir -p build &&\

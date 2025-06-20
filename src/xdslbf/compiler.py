@@ -8,9 +8,9 @@ from xdsl.dialects import arith, func, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
-from xdslbf.emulator.interpreter import BrainFInterpreter
 from xdslbf.frontend.parser import BrainFParser
-from xdslbf.rewrites.lower_builtin import LowerBfToBuiltinPass
+from xdslbf.interpreters.interpreter import BrainFInterpreter
+from xdslbf.transforms.lower_builtin import LowerBfToBuiltinPass
 
 
 def get_context() -> Context:

@@ -1,7 +1,3 @@
-# Project-specific
-src/xdsl-docs
-tmp
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -216,3 +212,8 @@ cython_debug/
 # Operation system specific
 .DS_Store
 Thumbs.db
+
+# lit tests results
+**/.lit_test_times.txt
+tests/**/Output/*
+*.out

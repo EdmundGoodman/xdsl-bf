@@ -1,1 +1,1 @@
-"""Indicate the directory is a package."""
+"""Compiler for the BrainF language."""

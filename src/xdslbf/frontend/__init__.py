@@ -1,1 +1,1 @@
-"""Indicate the directory is a package."""
+"""Frontend (lexer and parser) for the BrainF language."""
