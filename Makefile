@@ -73,10 +73,10 @@ build/optimised.mlir: build/lowered.mlir
 		-o build/optimised.mlir
 
 build/out.ll: build/optimised.mlir
-	mlir-translate --mlir-to-llvmir build/lowered.mlir -o build/out.ll
+	mlir-translate --mlir-to-llvmir build/optimised.mlir -o build/out.ll
 
 build/executable: build/out.ll
-	clang build/out.ll -o build/executable
+	clang -O0 build/out.ll -o build/executable
 
 .PHONY: cleanbuild
 cleanbuild:

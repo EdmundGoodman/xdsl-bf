@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from xdsl.context import Context
-from xdsl.dialects import arith, llvm, memref, scf
+from xdsl.dialects import arith, func, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
 
 from xdslbf.dialects import bf
@@ -19,7 +19,7 @@ def get_context() -> Context:
     ctx.load_dialect(arith.Arith)
     ctx.load_dialect(scf.Scf)
     ctx.load_dialect(memref.MemRef)
-    ctx.load_dialect(llvm.LLVM)
+    ctx.load_dialect(func.Func)
     ctx.load_dialect(Builtin)
     ctx.load_dialect(bf.BrainF)
     return ctx
