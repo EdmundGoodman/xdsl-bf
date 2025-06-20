@@ -162,58 +162,16 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
-# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
-
-# User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionaries
-.idea/**/shelf
-
-# Generated files
-.idea/**/contentModel.xml
-
-# Sensitive or high-churn files
-.idea/**/dataSources/
-.idea/**/dataSources.ids
-.idea/**/dataSources.local.xml
-.idea/**/sqlDataSources.xml
-.idea/**/dynamic.xml
-.idea/**/uiDesigner.xml
-.idea/**/dbnavigator.xml
-
-# mpeltonen/sbt-idea plugin
-.idea_modules/
-
-# SonarLint plugin
-.idea/sonarlint/
-
-# Editor-based Rest Client
-.idea/httpRequests
-
-# VSCode
-#  As with JetBrains, a template for VSCode is maintained here
-#  https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-
-# Operation system specific
-.DS_Store
-Thumbs.db
-
 # lit tests results
 **/.lit_test_times.txt
 tests/**/Output/*
 *.out
+
+# Editor files
+.idea/
+.idea_modules/
+.vscode/
+
+# Operation system specific
+.DS_Store
+Thumbs.db
