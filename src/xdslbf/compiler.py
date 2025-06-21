@@ -4,13 +4,15 @@
 from pathlib import Path
 
 from xdsl.context import Context
-from xdsl.dialects import arith, func, memref, scf
+from xdsl.dialects import arith, cf, func, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
+from xdsl.printer import Printer
 
 from xdslbf.dialects import bf, bfe
 from xdslbf.frontend import BrainFParser
 from xdslbf.transforms.lower_bf_bfe import LowerBfToBfePass
 from xdslbf.transforms.lower_bf_builtin import LowerBfToBuiltinPass
+from xdslbf.transforms.lower_bfe_builtin import LowerBfeToBuiltinPass
 
 # from xdslbf.transforms.optimise_bfe import OptimiseBfePass
 
@@ -20,6 +22,7 @@ def get_context() -> Context:
     ctx = Context()
     ctx.load_dialect(arith.Arith)
     ctx.load_dialect(scf.Scf)
+    ctx.load_dialect(cf.Cf)
     ctx.load_dialect(memref.MemRef)
     ctx.load_dialect(func.Func)
     ctx.load_dialect(Builtin)
@@ -44,6 +47,7 @@ def lower_bf_bfe(program: str, ctx: Context) -> ModuleOp:
     """Parse a BrainF program and lower it to a better custom IR."""
     module = parse_brainf(program)
     LowerBfToBfePass().apply(ctx, module)
+    LowerBfeToBuiltinPass().apply(ctx, module)
     # OptimiseBfePass().apply(ctx, module)
     return module
 
@@ -60,8 +64,8 @@ if __name__ == "__main__":
     #     "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
     #     "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
     # )
-    # code = "++>+" # "+++>+<-[--]+"  # <-"
-    code = get_bf_from_file("tests/examples/hanoi.bf")
+    # code = get_bf_from_file("tests/examples/hanoi.bf")
+    code = "++[-]>+"  # "+++>+<-[--]+"  # <-"
 
     COMPILE = True
     if COMPILE:
@@ -71,4 +75,4 @@ if __name__ == "__main__":
         module = parse_brainf(code)
         # from xdslbf.interpreters.bf import BrainFInterpreter
         # BrainFInterpreter().interpret(module)
-    print(module)
+    Printer().print(module)

@@ -208,7 +208,6 @@ class LowerBfToBuiltinPass(ModulePass):
         block.add_ops(
             [
                 memref.DeallocOp.get(memory_alloc_op),
-                const_0 := arith.ConstantOp.from_int_and_width(0, i32),
                 func.ReturnOp(const_0),
             ]
         )

@@ -74,6 +74,12 @@ class MemoryOp(BrainFExtendedBlock):
         RecursiveMemoryEffect(), NoTerminator(), SameOperandsAndResultType()
     )
 
+    def get_move(self) -> int:
+        """Get the move offset of the memory block."""
+        move = self.properties["move"]
+        assert isinstance(move, IntegerAttr)
+        return move.value.data
+
     def __init__(
         self,
         pointer: Operation | SSAValue,
