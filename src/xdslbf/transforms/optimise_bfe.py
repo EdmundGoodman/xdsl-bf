@@ -1,7 +1,5 @@
 """A pass which lowers the bf dialect to use only builtin mlir dialects."""
 
-from dataclasses import dataclass
-
 from xdsl.context import Context
 from xdsl.dialects.builtin import ModuleOp
 from xdsl.passes import ModulePass
@@ -15,7 +13,6 @@ from xdsl.pattern_rewriter import (
 from xdslbf.dialects import bfe
 
 
-@dataclass
 class MergeBfeMemoryOp(RewritePattern):
     """A pattern to merge adjacent bfe memory operations."""
 
@@ -38,23 +35,28 @@ class MergeBfeMemoryOp(RewritePattern):
         assert merged_op.body.first_block is not None
         stored_operation: dict[int, bfe.StoreOp] = {}
         for inner_op in op.body.ops:
-            # Track the offsets written to by the first operation
             if isinstance(inner_op, bfe.StoreOp):
+                # Track the offsets written to by the first operation
                 stored_operation[inner_op.get_offset()] = inner_op
             # Copy all operations across to the merged operation
             inner_op.detach()
             merged_op.body.first_block.add_op(inner_op)
 
         for inner_op in next_op.body.ops:
-            # If we are loading back something we just stored
+            if isinstance(inner_op, bfe.StoreOp | bfe.LoadOp):
+                # Update the offsets to reflect moves
+                inner_op.set_offset(next_offset + inner_op.get_offset())
             if (
                 isinstance(inner_op, bfe.LoadOp)
                 and (offset := next_offset + inner_op.get_offset()) in stored_operation
             ):
-                # And replace all the re-load uses with the original value stored
+                # If we are loading back something we just stored, replace all
+                # the re-load uses with the original value stored, and discard
+                # the extraneous store
                 inner_op.results[0].replace_by(stored_operation[offset].data)
+                rewriter.erase_op(stored_operation[offset])
                 continue
-            # Copy all operations across to the merged operation
+            # Copy non-load other operations across to the merged operation
             inner_op.detach()
             merged_op.body.first_block.add_op(inner_op)
 
@@ -70,4 +72,3 @@ class OptimiseBfePass(ModulePass):
     def apply(self, ctx: Context, op: ModuleOp) -> None:  # noqa: ARG002
         """Apply the lowering pass."""
         PatternRewriteWalker(MergeBfeMemoryOp()).rewrite_module(op)
-        # CanonicalizePass().apply(ctx, op)
