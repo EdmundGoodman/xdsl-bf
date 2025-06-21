@@ -21,13 +21,13 @@ from xdslbf.dialects import bf, bfe
 class BfOpLowering(RewritePattern):
     """A pattern to rewrite left and right shift operations."""
 
-    data_pointer: list[Operation | SSAValue]
+    data_pointer_stack: list[Operation | SSAValue]
 
     def rewrite_inc_op(self, op: bf.BrainFOperation, rewriter: PatternRewriter) -> None:
         """Rewrite an increment operation."""
         arith_op = arith.AddiOp if isinstance(op, bf.IncOp) else arith.SubiOp
         mem_op = bfe.MemoryOp(
-            pointer=self.data_pointer[-1],
+            pointer=self.data_pointer_stack[-1],
         )
         assert mem_op.body.first_block is not None
         mem_op.body.first_block.add_ops(
@@ -41,18 +41,19 @@ class BfOpLowering(RewritePattern):
 
         rewriter.insert_op_before_matched_op(mem_op)
         rewriter.erase_matched_op()
-        self.data_pointer[-1] = mem_op
+        self.data_pointer_stack[-1] = mem_op
 
     def rewrite_shift_op(
         self, op: bf.BrainFOperation, rewriter: PatternRewriter
     ) -> None:
         """Rewrite a shift operation."""
         mem_op = bfe.MemoryOp(
-            pointer=self.data_pointer[-1], move=1 if isinstance(op, bf.RshftOp) else -1
+            pointer=self.data_pointer_stack[-1],
+            move=1 if isinstance(op, bf.RshftOp) else -1,
         )
         rewriter.insert_op_before_matched_op(mem_op)
         rewriter.erase_matched_op()
-        self.data_pointer[-1] = mem_op
+        self.data_pointer_stack[-1] = mem_op
 
     def rewrite_loop_op(
         self, op: bf.BrainFOperation, rewriter: PatternRewriter
@@ -62,27 +63,25 @@ class BfOpLowering(RewritePattern):
         loop_body = op.regions
         for region in loop_body:
             op.detach_region(region)
-
         # Construct a while loop with the `bf.loop`'s body
         while_op = bfe.WhileOp(
-            pointer=self.data_pointer[-1],
+            pointer=self.data_pointer_stack[-1],
             regions=loop_body,
         )
         assert while_op.body.first_block is not None
-
-        # Add the new op after the matched one so it's body also gets lowered
+        # Add the new op after the matched one so its body also gets lowered
         rewriter.insert_op_after_matched_op(while_op)
         # Erase the matched op
         rewriter.erase_matched_op()
-        self.data_pointer[-1] = while_op
-        self.data_pointer.append(while_op.operands[0])
+        self.data_pointer_stack[-1] = while_op
+        self.data_pointer_stack.append(while_op.operands[0])
 
     def rewrite_ret_op(
         self, _op: bf.BrainFOperation, rewriter: PatternRewriter
     ) -> None:
         """Rewrite a return operation."""
-        rewriter.replace_matched_op(bfe.ContinueOp(self.data_pointer[-1]))
-        self.data_pointer.pop()
+        rewriter.replace_matched_op(bfe.ContinueOp(self.data_pointer_stack[-1]))
+        self.data_pointer_stack.pop()
 
     @op_type_rewrite_pattern
     def match_and_rewrite(

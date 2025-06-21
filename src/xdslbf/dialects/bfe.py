@@ -129,13 +129,26 @@ class ContinueOp(IRDLOperation):
         )
 
 
+class OffsetOp(IRDLOperation, abc.ABC):
+    """An operation with a specified memory offset."""
+
+    offset = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
+
+    def get_offset(self) -> int:
+        """Get the offset value of the operation."""
+        return self.offset.value.data
+
+    def set_offset(self, offset: int) -> None:
+        """Set the offset value of the operation."""
+        self.properties["offset"] = IntegerAttr(offset, IndexType())
+
+
 @irdl_op_definition
-class LoadOp(IRDLOperation):
+class LoadOp(OffsetOp):
     """Load memory from the tape at a specified offset."""
 
     name = "bfe.load"
 
-    offset = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
     data = result_def(i32)
     traits = traits_def(MemoryReadEffect())
 
@@ -151,12 +164,11 @@ class LoadOp(IRDLOperation):
 
 
 @irdl_op_definition
-class StoreOp(IRDLOperation):
+class StoreOp(OffsetOp):
     """Store back into memory in the tape at a specified offset."""
 
     name = "bfe.store"
 
-    offset = prop_def(IntegerAttr.constr(type=IndexTypeConstr))
     data = operand_def(i32)
     traits = traits_def(MemoryWriteEffect())
 
