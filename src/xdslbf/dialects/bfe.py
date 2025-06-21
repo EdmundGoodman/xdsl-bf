@@ -10,7 +10,7 @@ import abc
 from collections.abc import Sequence
 from typing import Any
 
-from xdsl.dialects.builtin import I32, IndexType, IndexTypeConstr, IntegerAttr, i32
+from xdsl.dialects.builtin import IndexType, IndexTypeConstr, IntegerAttr, i32
 from xdsl.ir import Attribute, Block, Dialect, Operation, Region, SSAValue
 from xdsl.irdl import (
     IRDLOperation,
@@ -48,7 +48,6 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
         *,
         regions: Sequence[Region] | None = None,
         properties: dict[str, Attribute | None] | None = None,
-        result_types: tuple[IndexType] = (IndexType(),),
         **kwargs: Any,
     ):
         """Default to a single empty region."""
@@ -56,7 +55,7 @@ class BrainFExtendedBlock(BrainFExtendedOperation):
             regions = [Region([Block()])]
         super().__init__(
             operands=(pointer,),
-            result_types=result_types,
+            result_types=(IndexType(),),
             regions=regions,
             properties=properties,
             **kwargs,
@@ -86,19 +85,13 @@ class MemoryOp(BrainFExtendedBlock):
         *,
         move: int = 0,
         regions: Sequence[Region] | None = None,
-        properties: dict[str, Attribute | None] | None = None,
-        result_types: tuple[IndexType] = (IndexType(),),
         **kwargs: Any,
     ):
         """Set the move offset as a property."""
-        if properties is None:
-            properties = {}
-        properties |= {"move": IntegerAttr(move, IndexType())}
         super().__init__(
             pointer=pointer,
-            result_types=result_types,
             regions=regions,
-            properties=properties,
+            properties={"move": IntegerAttr(move, IndexType())},
             **kwargs,
         )
 
@@ -158,12 +151,12 @@ class LoadOp(OffsetOp):
     data = result_def(i32)
     traits = traits_def(MemoryReadEffect())
 
-    assembly_format = "attr-dict $offset `:` type($data)"
+    assembly_format = "attr-dict `+` $offset `:` type($data)"
 
-    def __init__(self, offset: int, result_types: tuple[I32] = (i32,), **kwargs: Any):
+    def __init__(self, offset: int, **kwargs: Any):
         """Specify the data to store."""
         super().__init__(
-            result_types=result_types,
+            result_types=(i32,),
             properties={"offset": IntegerAttr(offset, IndexType())},
             **kwargs,
         )
@@ -178,13 +171,51 @@ class StoreOp(OffsetOp):
     data = operand_def(i32)
     traits = traits_def(MemoryWriteEffect())
 
-    assembly_format = "$data attr-dict $offset"
+    assembly_format = "$data attr-dict `+` $offset"
 
     def __init__(self, data: Operation | SSAValue, offset: int, **kwargs: Any):
         """Specify the data to store."""
         super().__init__(
             operands=[data],
             properties={"offset": IntegerAttr(offset, IndexType())},
+            **kwargs,
+        )
+
+
+@irdl_op_definition
+class InOp(IRDLOperation):
+    """Load data from the standard input."""
+
+    name = "bfe.in"
+
+    data = result_def(i32)
+    traits = traits_def(MemoryWriteEffect())
+
+    assembly_format = "attr-dict `:` type($data)"
+
+    def __init__(self, **kwargs: Any):
+        """Specify the result type."""
+        super().__init__(
+            result_types=(i32,),
+            **kwargs,
+        )
+
+
+@irdl_op_definition
+class OutOp(IRDLOperation):
+    """Output data to the standard output."""
+
+    name = "bfe.out"
+
+    data = operand_def(i32)
+    traits = traits_def(MemoryReadEffect())
+
+    assembly_format = "attr-dict $data"
+
+    def __init__(self, data: Operation | SSAValue, **kwargs: Any):
+        """Specify the data to store."""
+        super().__init__(
+            operands=[data],
             **kwargs,
         )
 
@@ -197,6 +228,8 @@ BrainFExtended = Dialect(
         ContinueOp,
         LoadOp,
         StoreOp,
+        InOp,
+        OutOp,
     ],
     [],
 )

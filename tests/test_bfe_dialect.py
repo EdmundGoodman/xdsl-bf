@@ -31,10 +31,10 @@ def test_bf_builder() -> None:
 builtin.module {
   %0 = arith.constant 0 : index
   %1 = "bfe.mem"(%0) <{move = 0 : index}> ({
-    %2 = bfe.load 2 : i32
+    %2 = bfe.load + 2 : i32
     %3 = arith.constant 1 : i32
     %4 = arith.addi %2, %3 : i32
-    bfe.store %4 2
+    bfe.store %4 + 2
   }) : (index) -> index
   %5 = "bfe.while"(%1) ({
     %6 = "bfe.mem"(%1) <{move = 1 : index}> ({
