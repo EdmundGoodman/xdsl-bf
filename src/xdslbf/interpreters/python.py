@@ -1,32 +1,4 @@
-"""Interpreter for the BrainF language.
-
-Approach sketch:
-
-```python
-from typing import Any
-
-from xdsl.interpreter import (
-    Interpreter,
-    InterpreterFunctions,
-    impl_terminator,
-    register_impls,
-)
-
-from xdslbf.dialects import bf
-
-
-@register_impls
-class BrainFFunctions(InterpreterFunctions):
-    '''Implementations for the operations of the BrainF language.'''
-
-    @impl_terminator(bf.IncOp)
-    def run_inc(
-        self, interpreter: Interpreter, op: bf.IncOp, args: tuple[Any, ...]
-    ) -> tuple[Any, ...]:
-        '''Implementation for the increment operation.'''
-        raise NotImplementedError
-```
-"""
+"""Interpreter for the BrainF language."""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -119,7 +91,7 @@ class BrainFInterpreter:
         assert current_instr.parent.parent.parent is not None
         return current_instr.parent.parent.parent.next_op
 
-    def get_operation_implementations(
+    def _get_operation_implementations(
         self,
     ) -> dict[type[Operation], Callable[[Operation], Operation | None]]:
         """Get the operation implementations."""
@@ -136,7 +108,7 @@ class BrainFInterpreter:
 
     def interpret(self, program: ModuleOp) -> None:
         """Interpret a BrainF program."""
-        operation_implementations = self.get_operation_implementations()
+        operation_implementations = self._get_operation_implementations()
 
         if (block := program.body.first_block) is None:
             return

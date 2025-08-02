@@ -10,7 +10,8 @@ from xdsl.printer import Printer
 
 from xdslbf.dialects import bf
 from xdslbf.frontend import BrainFParser
-from xdslbf.transforms.lower_bf_builtin import LowerBfToBuiltinPass
+from xdslbf.interpreters.xdsl import BrainFInterpreter
+from xdslbf.transforms import LowerBfToBuiltinPass
 
 
 def get_context() -> Context:
@@ -45,19 +46,27 @@ def get_bf_from_file(name: str) -> str:
 
 
 if __name__ == "__main__":
-    # code = (
-    #     ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++"
-    #     "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
-    #     "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
-    # )
-    code = get_bf_from_file("tests/examples/hanoi.bf")
-    # code = "+++>+<-[--]+."  # "+++>+<-[--]+"  # <-"
 
-    COMPILE = True
-    if COMPILE:
+    def compile_hanoi() -> None:
+        """Compile the towers of hanoi example."""
+        code = get_bf_from_file("tests/examples/hanoi.bf")
         module = lower_bf_builtin(code, ctx=get_context())
-    else:
+        Printer().print(module)
+
+    def interpret_hello_world() -> None:
+        """Interpret a 'Hello world' program."""
+        code = (
+            ">++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++"
+            "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
+            "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
+        )
         module = parse_brainf(code)
-        # from xdslbf.interpreters.bf import BrainFInterpreter
-        # BrainFInterpreter().interpret(module)
-    Printer().print(module)
+        BrainFInterpreter().interpret(module)
+
+    # compile_hanoi()
+    # interpret_hello_world()
+
+    code = ",+."
+    module = parse_brainf(code)
+    interpreter = BrainFInterpreter()
+    interpreter.interpret(module)
