@@ -4,11 +4,14 @@ An optimising BrainF compiler in xDSL.
 
 ## The plan
 
-- [x] Write a xDSL (IRDL) dialect for BrainF
-- [x] Write a lexer and parser from program source code into this dialect
-- [x] Write an emulator for the BrainF dialect
-- [x] Write a lowering pass from our BrainF dialect to MLIR's `cf`, `arith`,  `builtin`, `memref`, and `llvm` dialects
-- [ ] Write rewriting optimisations for the BrainF dialect
+- [x] Design a dialect for BrainF
+- [x] Implement a lexer and parser from program source code into this dialect
+- [x] Implement an interpreter for the BrainF dialect
+- [x] Implement a lowering pass from our BrainF dialect to MLIR's `cf`, `arith`,  `builtin`, `memref`, and `llvm` dialects
+- [ ] Implement rewriting optimisations for the BrainF dialect
+  - [ ] Design an extended dialect for optimising BrainF
+  - [ ] Implement lowering passes to and from the extended dialect
+  - [ ] Implement optimisation passes on the extended dialect
 
 This is running concurrently with [my friend Aidan's effort in MLIR](https://gitlab.com/aidanhall/optimising-bf-compiler), so also have a look at that!
 

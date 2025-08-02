@@ -8,7 +8,7 @@
 
 ## Emulator
 
-::: xdslbf.emulator.interpreter
+::: xdslbf.interpreters.bf
 
 ## Frontend
 
@@ -18,4 +18,4 @@
 
 ## Rewrites
 
-::: xdslbf.rewrites.lower_builtin
+::: xdslbf.transforms.lower_bf_builtin
