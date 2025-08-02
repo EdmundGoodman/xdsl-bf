@@ -1,16 +1,50 @@
 """A pass which lowers the bfe dialect to use only builtin mlir dialects."""
 
+from dataclasses import dataclass
+
 from xdsl.context import Context
 from xdsl.dialects import arith, cf, func, memref, scf
 from xdsl.dialects.builtin import IndexType, ModuleOp, i32
 from xdsl.ir import Block, Region
 from xdsl.passes import ModulePass
+from xdsl.pattern_rewriter import (
+    GreedyRewritePatternApplier,
+    PatternRewriter,
+    PatternRewriteWalker,
+    RewritePattern,
+    op_type_rewrite_pattern,
+)
 from xdsl.printer import Printer
 from xdsl.rewriter import BlockInsertPoint, Rewriter
+from xdsl.utils.exceptions import PassFailedException
 
 from xdslbf.dialects import bfe
 
 PRINTER = Printer()
+
+
+@dataclass
+class LoadOpLowering(RewritePattern):
+    """A pattern to rewrite left and right shift operations."""
+
+    memory: memref.AllocOp
+
+    @op_type_rewrite_pattern
+    def match_and_rewrite(self, op: bfe.LoadOp, rewriter: PatternRewriter) -> None:
+        """Rewrite left and right shift operations."""
+        print(op.parent_block().args[0])
+        block_offset = op.parent_block().args[0]
+        # print(block_offset)
+        rewriter.replace_op(
+            op,
+            [
+                const_1 := arith.ConstantOp.from_int_and_width(
+                    op.get_offset(), IndexType()
+                ),
+                inc_op := arith.AddiOp(block_offset, const_1),
+                memref.LoadOp.get(self.memory, [inc_op]),
+            ],
+        )
 
 
 class LowerBfeToBuiltinPass(ModulePass):
@@ -75,12 +109,11 @@ class LowerBfeToBuiltinPass(ModulePass):
 
         return main, memory_alloc_op
 
-    def lower_bfe_blocks(self, main: func.FuncOp, memory: memref.AllocOp) -> None:  # noqa: ARG002
+    def lower_bfe_blocks(self, main: func.FuncOp, memory: memref.AllocOp) -> None:
         """Convert all bfe ops to llvm and scf equivalents."""
         main_impl_block = main.body.blocks[1]
         prev_block = main.body.last_block
         assert prev_block is not None
-        # print(main)
 
         # Elide the temporary basic block routing during walk
         assert isinstance(main_impl_block.last_op, cf.BranchOp)
@@ -104,7 +137,6 @@ class LowerBfeToBuiltinPass(ModulePass):
                 else:
                     move = mem_block.args[0]
                 mem_block.add_op(cf.BranchOp(prev_block, move))
-                PRINTER.print(mem_block)
                 Rewriter().insert_block(
                     mem_block,
                     BlockInsertPoint.after(main_impl_block),
@@ -113,35 +145,30 @@ class LowerBfeToBuiltinPass(ModulePass):
 
             elif isinstance(op, bfe.WhileOp):
                 op.detach_region(loop_region := op.regions[0])
-                loop_block = Block(
+                loop_block = Block([], arg_types=(IndexType(),))
+                loop_block.add_ops(
                     [
-                        scf.WhileOp(
-                            arguments=[],
-                            result_types=[],
+                        while_op := scf.WhileOp(
+                            arguments=[loop_block.args[0]],
+                            result_types=[IndexType()],
                             before_region=[
-                                Block(
-                                    [
-                                        # load_pointer_op := memref.LoadOp.get(self.data_pointer, []),
-                                        # pointer_index := arith.IndexCastOp(
-                                        #     load_pointer_op, IndexType()
-                                        # ),
-                                        # load_data_op := memref.LoadOp.get(self.memory, [pointer_index]),
-                                        const_0 := arith.ConstantOp.from_int_and_width(
-                                            0, i32
-                                        ),
-                                        # cmp_op := arith.CmpiOp(load_data_op, const_0, "ne"),
-                                        scf.ConditionOp(const_0),
-                                    ]
-                                )
+                                while_block := Block([], arg_types=(IndexType(),))
                             ],
                             after_region=loop_region,
-                        )
-                    ],
-                    arg_types=(IndexType(),),
+                        ),
+                        cf.BranchOp(prev_block, while_op),
+                    ]
                 )
-                move = loop_block.args[0]
-                loop_block.add_op(cf.BranchOp(prev_block, move))
-                PRINTER.print(loop_block)
+                while_block.add_ops(
+                    [
+                        load_data_op := memref.LoadOp.get(
+                            memory, [while_block.args[0]]
+                        ),
+                        const_0 := arith.ConstantOp.from_int_and_width(0, i32),
+                        cmp_op := arith.CmpiOp(load_data_op, const_0, "ne"),
+                        scf.ConditionOp(cmp_op),
+                    ]
+                )
                 Rewriter().insert_block(
                     loop_block,
                     BlockInsertPoint.after(main_impl_block),
@@ -149,8 +176,7 @@ class LowerBfeToBuiltinPass(ModulePass):
                 prev_block = loop_block
 
             else:
-                pass
-                # raise PassFailedException(f"Unexpected operation '{op.name}'")
+                raise PassFailedException(f"Unexpected operation '{op.name}'")
 
         # Discard the original main implementation
         main.body.detach_block(main_impl_block)
@@ -160,10 +186,10 @@ class LowerBfeToBuiltinPass(ModulePass):
         main, memory = self.build_brainf_environment(ctx, op)
         self.lower_bfe_blocks(main, memory)
         print("\n\n")
-        # PatternRewriteWalker(
-        #     GreedyRewritePatternApplier(
-        #         [
-        #             MemoryOpLowering(memory),
-        #         ]
-        #     )
-        # ).rewrite_module(op)
+        PatternRewriteWalker(
+            GreedyRewritePatternApplier(
+                [
+                    LoadOpLowering(memory),
+                ]
+            )
+        ).rewrite_module(op)
