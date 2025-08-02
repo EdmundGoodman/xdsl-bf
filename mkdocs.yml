@@ -22,6 +22,9 @@ use_directory_urls: false
 nav:
   - Home: index.md
   - Reference: reference.md
+  - Tutorial:
+    - Introduction: tutorial/1_intro.ipynb
+    - Dialects: tutorial/2_dialects.ipynb
 
 theme:
   name: material
@@ -95,6 +98,11 @@ plugins:
             show_root_heading: true
             show_root_full_path: false
             show_signature_annotations: true
+  - mkdocs-jupyter:
+      execute: true
+      include_source: true
+      include: ["*.ipynb"]
+      kernel_name: python3
 
 extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6

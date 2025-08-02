@@ -40,6 +40,7 @@ dev = [
 docs = [
     "mkdocs-material>=9.5.48",
     "mkdocstrings[python]>=0.26.1",
+    "mkdocs-jupyter>=0.25.1",
 ]
 
 
