@@ -1,23 +1,41 @@
-"""Interpreter for the BrainF language."""
+"""Interpreter in pure Python for the BrainF language."""
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from typing import TextIO
 
 from xdsl.dialects.builtin import ModuleOp
 from xdsl.ir import Operation
 
 from xdslbf.dialects import bf
+from xdslbf.interpreters.state import BfState, PointerOutOfBoundsError
 
 
-@dataclass
 class BrainFInterpreter:
     """Interpreter for the BrainF language."""
 
-    pointer: int = 0
-    memory: list[int] = field(default_factory=lambda: [0] * 30_000)
+    pointer: int
+    memory: list[int]
+    input_stream: TextIO | None = None
+    output_stream: TextIO | None = None
 
-    output: list[int] | None = None
-    input_: list[int] | None = None
+    def __init__(self, state: BfState | None = None) -> None:
+        """Instantiate the interpreter."""
+        if state is None:
+            state = BfState()
+        self.state = state
+
+    @property
+    def state(self) -> BfState:
+        """Get state on the interpreter."""
+        return BfState(self.pointer, self.memory, self.input_stream, self.output_stream)
+
+    @state.setter
+    def state(self, state: BfState) -> None:
+        """Set state on the interpreter."""
+        self.pointer = state.pointer
+        self.memory = state.memory
+        self.input_stream = state.input_stream
+        self.output_stream = state.output_stream
 
     def _inc(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.inc` instruction."""
@@ -33,36 +51,32 @@ class BrainFInterpreter:
         """Interpret the `bf.lshft` instruction."""
         self.pointer -= 1
         if self.pointer < 0:
-            raise RuntimeError("Access beyond memory tape!")
+            raise PointerOutOfBoundsError(f"Pointer value {self.pointer} < 0")
         return current_instr.next_op
 
     def _rshft(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.rshft` instruction."""
         self.pointer += 1
         if self.pointer > len(self.memory):
-            raise RuntimeError("Access beyond memory tape!")
+            raise PointerOutOfBoundsError(
+                f"Pointer value {self.pointer} < {len(self.memory)}"
+            )
         return current_instr.next_op
 
     def _out(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.out` instruction."""
-        print(chr(self.memory[self.pointer]), end="")
-        return current_instr.next_op
-
-    def _out_list(self, current_instr: Operation) -> Operation | None:
-        """Interpret the `bf.out` instruction to a list."""
-        assert self.output is not None
-        self.output.append(self.memory[self.pointer])
+        if self.output_stream is None:
+            print(chr(self.memory[self.pointer]), end="")
+        else:
+            self.output_stream.write(chr(self.state.memory[self.state.pointer]))
         return current_instr.next_op
 
     def _in(self, current_instr: Operation) -> Operation | None:
         """Interpret the `bf.in` instruction."""
-        self.memory[self.pointer] = ord(input("> ")[0])
-        return current_instr.next_op
-
-    def _in_list(self, current_instr: Operation) -> Operation | None:
-        """Interpret the `bf.in` instruction from a list."""
-        assert self.input_ is not None
-        self.memory[self.pointer] = self.input_.pop(0)
+        if self.input_stream is None:
+            self.memory[self.pointer] = ord(input("> ")[0])
+        else:
+            self.memory[self.pointer] = ord(self.input_stream.read(1))
         return current_instr.next_op
 
     def _loop(self, current_instr: Operation) -> Operation | None:
@@ -100,8 +114,8 @@ class BrainFInterpreter:
             bf.DecOp: self._dec,
             bf.LshftOp: self._lshft,
             bf.RshftOp: self._rshft,
-            bf.OutOp: self._out if self.output is None else self._out_list,
-            bf.InOp: self._in if self.input_ is None else self._in_list,
+            bf.OutOp: self._out,
+            bf.InOp: self._in,
             bf.LoopOp: self._loop,
             bf.RetOp: self._ret,
         }
@@ -119,3 +133,8 @@ class BrainFInterpreter:
             if impl is None:
                 raise RuntimeError(f"Unsupported instruction {current_instr}")
             current_instr = impl(current_instr)
+
+        if (out := self.output_stream) is not None:
+            print(out)
+        else:
+            print()

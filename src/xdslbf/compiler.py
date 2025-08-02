@@ -10,7 +10,7 @@ from xdsl.printer import Printer
 
 from xdslbf.dialects import bf
 from xdslbf.frontend import BrainFParser
-from xdslbf.interpreters.xdsl import BrainFInterpreter
+from xdslbf.interpreters import BrainFInterpreter
 from xdslbf.transforms import LowerBfToBuiltinPass
 
 
@@ -64,9 +64,4 @@ if __name__ == "__main__":
         BrainFInterpreter().interpret(module)
 
     # compile_hanoi()
-    # interpret_hello_world()
-
-    code = ",+."
-    module = parse_brainf(code)
-    interpreter = BrainFInterpreter()
-    interpreter.interpret(module)
+    interpret_hello_world()

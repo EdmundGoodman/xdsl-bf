@@ -1,32 +1,20 @@
-"""Interpreter for the BrainF language."""
+"""Interpreter using xDSL infrastructure for the BrainF language."""
 
 from dataclasses import dataclass, field
-from typing import TextIO
 
 from xdsl.dialects.builtin import ModuleOp
 from xdsl.interpreter import (
     Interpreter,
     InterpreterFunctions,
     PythonValues,
+    ReturnedValues,
     impl,
+    impl_terminator,
     register_impls,
 )
 
 from xdslbf.dialects import bf
-
-
-class PointerOutOfBoundsError(RuntimeError):
-    """Exception to indicate the pointer is outside the memory tape."""
-
-
-@dataclass
-class BfState:
-    """A representation of BrainF mutable state."""
-
-    pointer: int = 0
-    memory: list[int] = field(default_factory=lambda: [0] * 30_000)
-    input_stream: TextIO | None = None
-    output_stream: TextIO | None = None
+from xdslbf.interpreters.state import BfState, PointerOutOfBoundsError
 
 
 @register_impls
@@ -85,6 +73,24 @@ class BfFunctions(InterpreterFunctions):
             )
         return args
 
+    @impl(bf.LoopOp)
+    def run_loop(
+        self, interpreter: Interpreter, op: bf.LoopOp, args: PythonValues
+    ) -> PythonValues:
+        """Interpret the loop operation in BrainF."""
+        state = BfFunctions.get_state(interpreter)
+        while state.memory[state.pointer]:
+            assert len(op.regions) > 0
+            args = interpreter.run_ssacfg_region(op.regions[0], args)
+        return args
+
+    @impl_terminator(bf.RetOp)
+    def run_ret(
+        self, _interpreter: Interpreter, _op: bf.RetOp, args: PythonValues
+    ) -> PythonValues:
+        """Interpret the return operation in BrainF."""
+        return ReturnedValues(args), ()
+
     @impl(bf.InOp)
     def run_in(
         self, interpreter: Interpreter, _op: bf.InOp, args: PythonValues
@@ -103,10 +109,10 @@ class BfFunctions(InterpreterFunctions):
     ) -> PythonValues:
         """Interpret the output operation in BrainF."""
         state = BfFunctions.get_state(interpreter)
-        if state.input_stream is None:
+        if state.output_stream is None:
             print(chr(state.memory[state.pointer]), end="")
         else:
-            state.input_stream.write(chr(state.memory[state.pointer]))
+            state.output_stream.write(chr(state.memory[state.pointer]))
         return args
 
 

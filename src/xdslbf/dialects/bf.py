@@ -29,7 +29,7 @@ from xdsl.irdl import (
     region_def,
     traits_def,
 )
-from xdsl.traits import MemoryReadEffect, MemoryWriteEffect
+from xdsl.traits import IsTerminator, MemoryReadEffect, MemoryWriteEffect
 
 
 class BrainFOperation(IRDLOperation, abc.ABC):
@@ -126,7 +126,7 @@ class RetOp(BrainFOperation):
     """
 
     name = "bf.ret"
-    traits = traits_def(MemoryReadEffect())
+    traits = traits_def(MemoryReadEffect(), IsTerminator())
 
 
 @irdl_op_definition
