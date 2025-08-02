@@ -21,10 +21,19 @@ use_directory_urls: false
 
 nav:
   - Home: index.md
-  - Reference: reference.md
+  - Reference:
+    - Compiler: reference/compiler.md
+    - Dialects: reference/dialects.md
+    - Frontend: reference/frontend.md
+    - Interpreter: reference/interpreter.md
+    - Transforms: reference/transforms.md
   - Tutorial:
     - Introduction: tutorial/1_intro.ipynb
     - Dialects: tutorial/2_dialects.ipynb
+    - Parsing: tutorial/3_parser.ipynb
+    - Interpreting: tutorial/4_interpreter.ipynb
+    - Lowering: tutorial/5_lowering.ipynb
+    - Optimisations: tutorial/6_optimisations.ipynb
 
 theme:
   name: material
