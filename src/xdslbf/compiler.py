@@ -8,11 +8,9 @@ from xdsl.dialects import arith, cf, func, memref, scf
 from xdsl.dialects.builtin import Builtin, ModuleOp
 from xdsl.printer import Printer
 
-from xdslbf.dialects import bf, bfe
+from xdslbf.dialects import bf
 from xdslbf.frontend import BrainFParser
-from xdslbf.transforms.lower_bf_bfe import LowerBfToBfePass
 from xdslbf.transforms.lower_bf_builtin import LowerBfToBuiltinPass
-from xdslbf.transforms.lower_bfe_builtin import LowerBfeToBuiltinPass
 
 
 def get_context() -> Context:
@@ -25,7 +23,6 @@ def get_context() -> Context:
     ctx.load_dialect(func.Func)
     ctx.load_dialect(Builtin)
     ctx.load_dialect(bf.BrainF)
-    ctx.load_dialect(bfe.BrainFExtended)
     return ctx
 
 
@@ -41,15 +38,6 @@ def lower_bf_builtin(program: str, ctx: Context) -> ModuleOp:
     return module
 
 
-def lower_bf_bfe(program: str, ctx: Context) -> ModuleOp:
-    """Parse a BrainF program and lower it to a better custom IR."""
-    module = parse_brainf(program)
-    LowerBfToBfePass().apply(ctx, module)
-    LowerBfeToBuiltinPass().apply(ctx, module)
-    # OptimiseBfePass().apply(ctx, module)
-    return module
-
-
 def get_bf_from_file(name: str) -> str:
     """Get BrainF source code from a file relative to the project root."""
     file = Path(__file__).parent.parent.parent / name
@@ -62,13 +50,12 @@ if __name__ == "__main__":
     #     "[<+++++++>-]<++.------------.>++++++[<+++++++++>-]"
     #     "<+.<.+++.------.--------.>>>++++[<++++++++>-]<+."
     # )
-    # code = get_bf_from_file("tests/examples/hanoi.bf")
-    code = "+++>+<-[--]+."  # "+++>+<-[--]+"  # <-"
+    code = get_bf_from_file("tests/examples/hanoi.bf")
+    # code = "+++>+<-[--]+."  # "+++>+<-[--]+"  # <-"
 
     COMPILE = True
     if COMPILE:
-        module = lower_bf_bfe(code, ctx=get_context())
-        # module = lower_bf_builtin(code, ctx=get_context())
+        module = lower_bf_builtin(code, ctx=get_context())
     else:
         module = parse_brainf(code)
         # from xdslbf.interpreters.bf import BrainFInterpreter
