@@ -1,3 +1,3 @@
 ::: xdslbf.interpreters.xdsl
 
-::: xdslbf.interpreters.state
+::: xdslbf.interpreters.base
