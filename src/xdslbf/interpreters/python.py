@@ -7,10 +7,14 @@ from xdsl.dialects.builtin import ModuleOp
 from xdsl.ir import Operation
 
 from xdslbf.dialects import bf
-from xdslbf.interpreters.state import BfState, PointerOutOfBoundsError
+from xdslbf.interpreters.base import (
+    BaseBrainFInterpreter,
+    BfState,
+    PointerOutOfBoundsError,
+)
 
 
-class BrainFInterpreter:
+class BrainFInterpreter(BaseBrainFInterpreter):
     """Interpreter for the BrainF language."""
 
     pointer: int
@@ -22,7 +26,7 @@ class BrainFInterpreter:
         """Instantiate the interpreter."""
         if state is None:
             state = BfState()
-        self.state = state
+        self.state = state  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def state(self) -> BfState:

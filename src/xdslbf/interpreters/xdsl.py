@@ -14,7 +14,11 @@ from xdsl.interpreter import (
 )
 
 from xdslbf.dialects import bf
-from xdslbf.interpreters.state import BfState, PointerOutOfBoundsError
+from xdslbf.interpreters.base import (
+    BaseBrainFInterpreter,
+    BfState,
+    PointerOutOfBoundsError,
+)
 
 
 @register_impls
@@ -117,13 +121,13 @@ class BfFunctions(InterpreterFunctions):
 
 
 @dataclass
-class BrainFInterpreter:
-    """Interpreter for the BrainF language."""
+class BrainFInterpreter(BaseBrainFInterpreter):
+    """xDSL-based interpreter for the BrainF language."""
 
     state: BfState = field(default_factory=BfState)
 
     def interpret(self, program: ModuleOp) -> None:
-        """Interpret a BrainF program."""
+        """Interpret a BrainF program using xDSL infrastructure."""
         interpreter = Interpreter(program)
         interpreter.register_implementations(BfFunctions())
         BfFunctions.set_state(interpreter, self.state)
