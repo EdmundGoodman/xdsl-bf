@@ -1,6 +1,7 @@
 """Interpreter using xDSL infrastructure for the BrainF language."""
 
 from dataclasses import dataclass, field
+from io import StringIO
 
 from xdsl.dialects.builtin import ModuleOp
 from xdsl.interpreter import (
@@ -138,3 +139,9 @@ class BrainFInterpreter(BaseBrainFInterpreter):
             print(out)
         else:
             print()
+
+    @property
+    def output(self) -> str:
+        """Get the string value of the output stream."""
+        assert isinstance(self.state.output_stream, StringIO)
+        return self.state.output_stream.getvalue()

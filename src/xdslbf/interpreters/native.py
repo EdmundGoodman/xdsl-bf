@@ -1,6 +1,7 @@
 """Interpreter in pure Python for the BrainF language."""
 
 from collections.abc import Callable
+from io import StringIO
 from typing import TextIO
 
 from xdsl.dialects.builtin import ModuleOp
@@ -14,7 +15,7 @@ from xdslbf.interpreters.base import (
 )
 
 
-class BrainFInterpreter(BaseBrainFInterpreter):
+class NativeBrainFInterpreter(BaseBrainFInterpreter):
     """Interpreter for the BrainF language."""
 
     pointer: int
@@ -26,7 +27,7 @@ class BrainFInterpreter(BaseBrainFInterpreter):
         """Instantiate the interpreter."""
         if state is None:
             state = BfState()
-        self.state = state  # pyright: ignore[reportIncompatibleVariableOverride]
+        self.state = state
 
     @property
     def state(self) -> BfState:
@@ -142,3 +143,9 @@ class BrainFInterpreter(BaseBrainFInterpreter):
             print(out)
         else:
             print()
+
+    @property
+    def output(self) -> str:
+        """Get the string value of the output stream."""
+        assert isinstance(self.state.output_stream, StringIO)
+        return self.state.output_stream.getvalue()

@@ -5,12 +5,14 @@ from typing import Any
 
 from xdslbf.compiler import parse_brainf
 from xdslbf.interpreters import BfState, BrainFInterpreter
-from xdslbf.interpreters.python import BrainFInterpreter as PythonBrainFInterpreter
+from xdslbf.interpreters.native import (
+    NativeBrainFInterpreter as PythonBrainFInterpreter,
+)
 
 
 def test_interpreter_simple_loop() -> None:
     """Test the interpreter runs a simple loop."""
-    code = ",+."
+    code = ",+.>+[-]<"
     state = BfState(
         input_stream=StringIO("a"),
         output_stream=StringIO(""),
@@ -22,7 +24,7 @@ def test_interpreter_simple_loop() -> None:
 
 def test_native_interpeter_simple_loop() -> None:
     """Test the interpreter runs a simple loop."""
-    code = ",+."
+    code = ",+.>+[-]<"
     state = BfState(
         input_stream=StringIO("a"),
         output_stream=StringIO(""),
